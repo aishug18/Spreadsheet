@@ -1,7 +1,7 @@
 ﻿namespace Formula
 {
-    public class Class1
+    public class Formula
     {
-
+        // TODO: Follow the PS2 instructions
     }
 }
