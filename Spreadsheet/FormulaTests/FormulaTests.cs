@@ -7,6 +7,7 @@
 namespace CS3500.FormulaTests;
 
 using CS3500.Formula;
+using System.Collections;
 
 /// <summary>
 ///   <para>
@@ -588,5 +589,6 @@ public class FormulaSyntaxTests
 
     // ---- additional tests for methods other than the constructor ----
 
+    
 
 }
