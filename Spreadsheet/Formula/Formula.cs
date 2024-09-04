@@ -102,12 +102,12 @@ public class Formula
 
         // check first token
         string firstToken = tokens.First();
-        if(!double.TryParse(firstToken, out double resultFirst) || !IsVar(firstToken) || !firstToken.Equals("("))
+        if(!double.TryParse(firstToken, out double resultFirst) && !IsVar(firstToken) && !firstToken.Equals("("))
             throw new FormulaFormatException("the first token is not a number, variable, or opening parenthesis, which is invalid");
 
         // check last token
         string lastToken = tokens.Last();
-        if (!double.TryParse(lastToken, out double resultLast) || !IsVar(lastToken) || !lastToken.Equals(")"))
+        if (!double.TryParse(lastToken, out double resultLast) && !IsVar(lastToken) && !lastToken.Equals(")"))
             throw new FormulaFormatException("the last token is not a number, variable, or closing parenthesis, which is invalid");
 
         foreach (string t in tokens) // check if each token is valid, if not throw exception
@@ -129,7 +129,7 @@ public class Formula
                 canonicalFormula += t.ToUpper();
 
             // check if token is an operator, and if an operator or an opening parenthesis is followed by an operator
-            else if (Regex.IsMatch(t, operators) && NumVarCloseParenFollowedByNumVarOpenParen(prevToken))
+            else if (Regex.IsMatch(t, operators) && OperOpenParenFollowedByOperCloseParen(prevToken))
                 canonicalFormula += t;
 
             // check if token is a closing parenthesis ), and if an operator or an opening parenthesis is followed by a closing parenthesis
@@ -308,7 +308,7 @@ public class Formula
     /// </summary>
     /// <param name="formula"> A string representing an infix formula such as 1*B1/3.0. </param>
     /// <returns> The ordered list of tokens in the formula. </returns>
-    private static List<string> GetTokens(string formula)
+    public static List<string> GetTokens(string formula)
     {
         List<string> results = [];
         string lpPattern = @"\(";
