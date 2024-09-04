@@ -102,116 +102,73 @@ public class Formula
 
         // check first token
         string firstToken = tokens.First();
-        if(!double.TryParse(firstToken, out double resultFirst) || !IsVar(firstToken) || firstToken != "(")
-        {
+        if(!double.TryParse(firstToken, out double resultFirst) || !IsVar(firstToken) || !firstToken.Equals("("))
             throw new FormulaFormatException("the first token is not a number, variable, or opening parenthesis, which is invalid");
-        }
 
         // check last token
         string lastToken = tokens.Last();
-        if (!double.TryParse(lastToken, out double resultLast) || !IsVar(lastToken) || lastToken != ")")
-        {
+        if (!double.TryParse(lastToken, out double resultLast) || !IsVar(lastToken) || !lastToken.Equals(")"))
             throw new FormulaFormatException("the last token is not a number, variable, or closing parenthesis, which is invalid");
-        }
 
         foreach (string t in tokens) // check if each token is valid, if not throw exception
         {
 
             // check if token is a number, and if a number, a variable, or a closing parenthesis is followed by a number, or if a number is negative
-            if (double.TryParse(t, out double number))
+            if (double.TryParse(t, out double number) && NumVarCloseParenFollowedByNumVarOpenParen(prevToken))
             {
-                if(double.Parse(t) < 0)
+                if(number < 0)
                     throw new FormulaFormatException("negative numbers are invalid");
                 
-                else if (NumVarCloseParenFollowedByNumVarOpenParen(prevToken))
-                {
-                    // it's a valid token
-                }
+                else
+                    canonicalFormula += number.ToString();
 
             }
 
             // check if a token is a variable, and if a number, a variable, or a closing parenthesis is followed by a variable
-            else if (IsVar(t))
-            {
-                if (NumVarCloseParenFollowedByNumVarOpenParen(prevToken))
-                {
-                    // it's a valid token
-                }
-
-            }
+            else if (IsVar(t) && NumVarCloseParenFollowedByNumVarOpenParen(prevToken))
+                canonicalFormula += t.ToUpper();
 
             // check if token is an operator, and if an operator or an opening parenthesis is followed by an operator
-            else if (Regex.IsMatch(t, operators))
-            {
-                if (NumVarCloseParenFollowedByNumVarOpenParen(prevToken))
-                {
-                    // it's a valid token
-                }
-
-            }
+            else if (Regex.IsMatch(t, operators) && NumVarCloseParenFollowedByNumVarOpenParen(prevToken))
+                canonicalFormula += t;
 
             // check if token is a closing parenthesis ), and if an operator or an opening parenthesis is followed by a closing parenthesis
-            else if (t == ")")
+            else if (t.Equals(")") && OperOpenParenFollowedByOperCloseParen(prevToken))
             {
-                if (OperOpenParenFollowedByOperCloseParen(prevToken))
-                {
-                    // it's a valid token
-                }
-
+                canonicalFormula += t;
                 countCloseParen++;
             }
 
             // check if token is an opening parenthesis (, and if a number, a variable, or a closing parenthesis is followed by an opening parenthesis
-            else if (t == "(")  // THIS ONE!!!! ------
+            else if (t.Equals("(") && NumVarCloseParenFollowedByNumVarOpenParen(prevToken))
             {
-                if (NumVarCloseParenFollowedByNumVarOpenParen(prevToken))
-                {
-                    // it's a valid token
-                }
-
+                canonicalFormula += t;
                 countOpenParen++;
             }
 
 
             // if a token is not a number, a variable, an operator, or a parenthesis, then it is an invalid token
             else
-            {
                 throw new FormulaFormatException("a token in the formula is not a valid token");
-            }
 
 
             // check if the number of closing parentheses seen so far is greater than the number of opening parentheses
             if (countCloseParen > countOpenParen)
-            {
                 throw new FormulaFormatException("the number of closing parentheses seen so far is greater then the number of opening parentheses, which is invalid");
-            }
 
-
-            //if t is non valid, throw new FormulaFormatException("message");
-
-            canonicalFormula += t;  // concatenating token to canonicalFormula
             prevToken = t;  // update previous token
-            
         }
 
         // check if the parentheses are balanced
         if (countCloseParen != countOpenParen)
-        {
             throw new FormulaFormatException("the total number of opening parentheses is not equal to the total number of closing parentheses, which is invalid");
-        }
     }
 
     // if the prevToken is a number, a variable, or a closing parenthesis and the current token is a number, a variable, or an opening parenthesis, throw exception
     private static bool NumVarCloseParenFollowedByNumVarOpenParen(string prevToken)
     {
-        if (double.TryParse(prevToken, out double result))
-            throw new FormulaFormatException("a number is followed by a number/variable/opening parenthesis, which is invalid");
-        
-        else if (IsVar(prevToken))
-            throw new FormulaFormatException("a variable is followed by a number/variable/opening parenthesis, which is invalid");
-        
-        else if (prevToken == ")")
-            throw new FormulaFormatException("a closing parenthesis is followed by a number/variable/opening parenthesis, which is invalid");
+        if (double.TryParse(prevToken, out double result) || IsVar(prevToken) || prevToken.Equals(")"))
+            throw new FormulaFormatException("a number/variable/closing parenthesis is followed by a number/variable/opening parenthesis, which is invalid");
         
         else
             return true;
@@ -223,11 +180,8 @@ public class Formula
     {
         string operators = @"[+\-*/]";  // regex pattern for operators +, -, *, /
 
-        if (Regex.IsMatch(prevToken, operators))
-            throw new FormulaFormatException("an operator is followed by an operator/closing parenthesis, which is invalid");
-        
-        else if (prevToken == "(")
-            throw new FormulaFormatException("an opening parenthesis is followed by an operator/closing parenthesis, which is invalid");
+        if (Regex.IsMatch(prevToken, operators) || prevToken.Equals("("))
+            throw new FormulaFormatException("an operator/opening parenthesis is followed by an operator/closing parenthesis, which is invalid");
         
         else
             return true;
