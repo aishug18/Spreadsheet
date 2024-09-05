@@ -53,7 +53,11 @@ public class Formula
     /// </summary>
     private const string VariableRegExPattern = @"[a-zA-Z]+\d+";
 
-    private string canonicalFormula; // member variable to store the string formula
+    /// <summary>
+    ///     This variable stores the string representation of the canonical formula (uppercase
+    ///     variables, no spaces, etc).
+    /// </summary>
+    private string canonicalFormula;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="Formula"/> class.
@@ -82,11 +86,9 @@ public class Formula
     ///     </list>
     /// </summary>
     /// <param name="formula"> The string representation of the formula to be created.</param>
-    public Formula(string formula1)
+    public Formula(string formula)
     {
-        // FIXME: implement your code here
-
-        List<string> tokens = GetTokens(formula1);  // the list of tokens from the formula
+        List<string> tokens = GetTokens(formula);  // the list of tokens from the formula
 
         // there must be at least one token (the list cannot be empty)
         if(tokens.Count == 0)
@@ -113,16 +115,9 @@ public class Formula
         foreach (string t in tokens) // check if each token is valid, if not throw exception
         {
 
-            // check if token is a number, and if a number, a variable, or a closing parenthesis is followed by a number, or if a number is negative
+            // check if token is a number, and if a number, a variable, or a closing parenthesis is followed by a number
             if (double.TryParse(t, out double number) && NumVarCloseParenFollowedByNumVarOpenParen(prevToken))
-            {
-                if(number < 0)
-                    throw new FormulaFormatException("negative numbers are invalid");
-                
-                else
-                    canonicalFormula += number.ToString();
-
-            }
+                canonicalFormula += number.ToString();
 
             // check if a token is a variable, and if a number, a variable, or a closing parenthesis is followed by a variable
             else if (IsVar(t) && NumVarCloseParenFollowedByNumVarOpenParen(prevToken))
@@ -214,7 +209,7 @@ public class Formula
         foreach(string t in tokens)
         {
             if (IsVar(t))
-                variables.Add(t.ToUpper());
+                variables.Add(t);
         }
         
         return variables;
@@ -308,7 +303,7 @@ public class Formula
     /// </summary>
     /// <param name="formula"> A string representing an infix formula such as 1*B1/3.0. </param>
     /// <returns> The ordered list of tokens in the formula. </returns>
-    public static List<string> GetTokens(string formula)
+    private static List<string> GetTokens(string formula)
     {
         List<string> results = [];
         string lpPattern = @"\(";

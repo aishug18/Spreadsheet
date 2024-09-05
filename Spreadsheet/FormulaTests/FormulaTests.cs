@@ -586,9 +586,71 @@ public class FormulaSyntaxTests
         _ = new Formula("8)(");
     }
 
+    // ----- Tests for GetVariables Method -----
 
-    // ---- additional tests for methods other than the constructor ----
+    [TestMethod]
+    public void FormulaGetVariables_TestLowercaseVariables_UppercaseVariables()
+    {
+        // input lowercase variables, should get uppercase variables
+        Formula formula = new Formula("a3+bd89*(4-h2)/l9");
+        HashSet<string> actual = (HashSet<string>)formula.GetVariables();
+        HashSet<string> expected = new HashSet<string> { "A3", "BD89", "H2", "L9"};
+        Assert.IsTrue(expected.SetEquals(actual));
+    }
 
-    
+    [TestMethod]
+    public void FormulaGetVariables_TestUppercaseVariables_UppercaseVariables()
+    {
+        // input uppercase variables, should get uppercase variables
+        Formula formula = new Formula("T3+WD89/K9");
+        HashSet<string> actual = (HashSet<string>)formula.GetVariables();
+        HashSet<string> expected = new HashSet<string> { "T3", "WD89", "K9"};
+        Assert.IsTrue(expected.SetEquals(actual));
+    }
+
+    [TestMethod]
+    public void FormulaGetVariables_TestDuplicateVariables_NoDuplicateVariables()
+    {
+        // input duplicate variables, should get no duplicate variables
+        Formula formula = new Formula("a3+bd89*(4-a3)/l9 - BD89");
+        HashSet<string> actual = (HashSet<string>)formula.GetVariables();
+        HashSet<string> expected = new HashSet<string> { "A3", "BD89", "L9" };
+        Assert.IsTrue(expected.SetEquals(actual));
+    }
+
+    [TestMethod]
+    public void FormulaGetVariables_TestNoVariables_EmptyList()
+    {
+        // input no variables, should get empty list
+        Formula formula = new Formula("3+3-9");
+        HashSet<string> actual = (HashSet<string>)formula.GetVariables();
+        HashSet<string> expected = new HashSet<string> { };
+        Assert.IsTrue(expected.SetEquals(actual));
+    }
+
+    // ----- Tests for ToString Method -----
+
+    /// <summary>
+    ///     This test checks if a formula with lowercase variables, spaces, numbers in scientific notation, and decimals
+    ///     with unnecessary digits is turned into a formula with uppercase variables, no spaces, and numbers in their default
+    ///     form.
+    /// </summary>
+    [TestMethod]
+    public void FormulaToString_TestLowercaseVarSpacesScientificNotationDecimals_ProperCanonicalFormula()
+    {
+        Formula formula = new Formula("a3+   5.100*(4  - 4e2)/    9E3");
+        string actual = formula.ToString();
+        string expected = "A3+5.1*(4-400)/9000";
+        Assert.AreEqual(expected, actual);
+    }
+
+    [TestMethod]
+    public void FormulaToString_TestCanonicalFormula_SameFormula()
+    {
+        Formula formula = new Formula("G3-7.9+300/BD6");
+        string actual = formula.ToString();
+        string expected = "G3-7.9+300/BD6";
+        Assert.AreEqual(expected, actual);
+    }
 
 }
