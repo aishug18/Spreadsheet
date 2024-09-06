@@ -88,95 +88,99 @@ public class Formula
     /// <param name="formula"> The string representation of the formula to be created.</param>
     public Formula(string formula)
     {
-        List<string> tokens = GetTokens(formula);  // the list of tokens from the formula
+        List<string> tokens = GetTokens(formula);
 
-        // there must be at least one token (the list cannot be empty)
         if(tokens.Count == 0)
-        {
             throw new FormulaFormatException("there must be at least one token");
-        }
 
-        string prevToken = "";   // storing the previous token to check the following rules.
+        string prevToken = "";
         canonicalFormula = "";
-        int countCloseParen = 0;    // variable to count # of closing parenthesis seen so far
-        int countOpenParen = 0; // variable to count # of opening parenthesis seen so far
-        string operators = @"[+\-*/]";  // regex pattern for operators +, -, *, /
+        int countCloseParen = 0;
+        int countOpenParen = 0;
+        string operators = @"[+\-*/]";
 
-        // check first token
         string firstToken = tokens.First();
         if(!double.TryParse(firstToken, out double resultFirst) && !IsVar(firstToken) && !firstToken.Equals("("))
-            throw new FormulaFormatException("the first token is not a number, variable, or opening parenthesis, which is invalid");
+            throw new FormulaFormatException("the first token is not a number, variable, or opening parenthesis");
 
-        // check last token
         string lastToken = tokens.Last();
         if (!double.TryParse(lastToken, out double resultLast) && !IsVar(lastToken) && !lastToken.Equals(")"))
-            throw new FormulaFormatException("the last token is not a number, variable, or closing parenthesis, which is invalid");
+            throw new FormulaFormatException("the last token is not a number, variable, or closing parenthesis");
 
-        foreach (string t in tokens) // check if each token is valid, if not throw exception
+        foreach (string t in tokens)
         {
-
-            // check if token is a number, and if a number, a variable, or a closing parenthesis is followed by a number
+            // if token is a number
             if (double.TryParse(t, out double number) && NumVarCloseParenFollowedByNumVarOpenParen(prevToken))
                 canonicalFormula += number.ToString();
 
-            // check if a token is a variable, and if a number, a variable, or a closing parenthesis is followed by a variable
+            // if token is a variable
             else if (IsVar(t) && NumVarCloseParenFollowedByNumVarOpenParen(prevToken))
                 canonicalFormula += t.ToUpper();
 
-            // check if token is an operator, and if an operator or an opening parenthesis is followed by an operator
+            // if token is an operator
             else if (Regex.IsMatch(t, operators) && OperOpenParenFollowedByOperCloseParen(prevToken))
                 canonicalFormula += t;
 
-            // check if token is a closing parenthesis ), and if an operator or an opening parenthesis is followed by a closing parenthesis
+            // if token is a closing parenthesis
             else if (t.Equals(")") && OperOpenParenFollowedByOperCloseParen(prevToken))
             {
                 canonicalFormula += t;
                 countCloseParen++;
             }
 
-            // check if token is an opening parenthesis (, and if a number, a variable, or a closing parenthesis is followed by an opening parenthesis
+            // if token is an opening parenthesis
             else if (t.Equals("(") && NumVarCloseParenFollowedByNumVarOpenParen(prevToken))
             {
                 canonicalFormula += t;
                 countOpenParen++;
             }
 
-
-            // if a token is not a number, a variable, an operator, or a parenthesis, then it is an invalid token
+            // if token is anything else
             else
                 throw new FormulaFormatException("a token in the formula is not a valid token");
 
-
-            // check if the number of closing parentheses seen so far is greater than the number of opening parentheses
             if (countCloseParen > countOpenParen)
-                throw new FormulaFormatException("the number of closing parentheses seen so far is greater then the number of opening parentheses, which is invalid");
+                throw new FormulaFormatException("the number of closing parentheses seen so far is greater then the number of opening parentheses");
 
-            prevToken = t;  // update previous token
+            prevToken = t;
         }
 
-        // check if the parentheses are balanced
         if (countCloseParen != countOpenParen)
-            throw new FormulaFormatException("the total number of opening parentheses is not equal to the total number of closing parentheses, which is invalid");
+            throw new FormulaFormatException("the total number of opening parentheses is not equal to the total number of closing parentheses");
     }
 
-    // if the prevToken is a number, a variable, or a closing parenthesis and the current token is a number, a variable, or an opening parenthesis, throw exception
+    /// <summary>
+    ///     Called if the current token is a number, variable, or open parenthesis.
+    ///     If the previous token is a number, variable, or close parenthesis, then the formula breaks the following rules and 
+    ///     is invalid, so an FormulaFormatException is thrown.
+    ///     Otherwise, the token is valid and returns true.
+    /// </summary>
+    /// <param name="prevToken"> the previous token. </param>
+    /// <returns> true if the following rules are passed, else throws a FormulaFormatException. </returns>
     private static bool NumVarCloseParenFollowedByNumVarOpenParen(string prevToken)
     {
         if (double.TryParse(prevToken, out double result) || IsVar(prevToken) || prevToken.Equals(")"))
-            throw new FormulaFormatException("a number/variable/closing parenthesis is followed by a number/variable/opening parenthesis, which is invalid");
+            throw new FormulaFormatException("a number/variable/closing parenthesis is followed by a number/variable/opening parenthesis");
         
         else
             return true;
 
     }
 
-    // if the prevToken is an operator or opening parenthesis and the current token is an operator or closing parenthesis, throw exception
+    /// <summary>
+    ///     Called if the current token is an operator or close parenthesis.
+    ///     If the previous token is an operator or open parenthesis, then the formula breaks the following rules and 
+    ///     is invalid, so an FormulaFormatException is thrown.
+    ///     Otherwise, the token is valid and returns true.
+    /// </summary>
+    /// <param name="prevToken"> the previous token. </param>
+    /// <returns> true if the following rules are passed, else throws a FormulaFormatException. </returns>
     private static bool OperOpenParenFollowedByOperCloseParen(string prevToken)
     {
         string operators = @"[+\-*/]";  // regex pattern for operators +, -, *, /
 
         if (Regex.IsMatch(prevToken, operators) || prevToken.Equals("("))
-            throw new FormulaFormatException("an operator/opening parenthesis is followed by an operator/closing parenthesis, which is invalid");
+            throw new FormulaFormatException("an operator/opening parenthesis is followed by an operator/closing parenthesis");
         
         else
             return true;
@@ -247,26 +251,7 @@ public class Formula
     /// </returns>
     public override string ToString()
     {
-        // FIXME: add your code here.
-
-        // I will already do the canonical formula stuff within the constructor itself when iterating through
-        // each token, so "canonicalFormula" will already be in the proper string format.
         return canonicalFormula;
-
-        //string result = formula;
-
-        // remove spaces:
-        //result = result.Replace(" ", "");
-
-        // uppercase all letters:
-        //result = result.ToUpper();
-
-        // use default ToString for default forms (such as 5.00 = 5)
-        //result = result.ToString();
-
-        // simpler way could be: return this.formula.ToUpper().ToString();
-
-        //return result;
     }
 
     /// <summary>
