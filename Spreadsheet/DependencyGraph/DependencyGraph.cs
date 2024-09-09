@@ -76,6 +76,7 @@ public class DependencyGraph
     /// <returns> true if the node has dependents. </returns>
     public bool HasDependents(string nodeName)
     {
+        // if a node does not exist in the graph, it is considered to have an empty set of dependents and dependees.
         return false;
     }
 
