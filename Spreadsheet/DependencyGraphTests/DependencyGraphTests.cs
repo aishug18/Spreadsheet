@@ -351,45 +351,107 @@ public class DependencyGraphTests
     // ---- Tests for ReplaceDependents ----
 
     [TestMethod]
-    public void TestReplaceDepedents_EmptyGraph_NoChange()
+    public void TestReplaceDepedents_EmptyGraph_StillReplacesDependents()
     {
         DependencyGraph dg = new DependencyGraph();
+        HashSet<string> newDependents = new HashSet<string> { "h1", "h2", "h3" };
+        dg.ReplaceDependents("a1", newDependents);
 
+        Assert.AreEqual(3, dg.Size);
+
+        HashSet<string> expected = new HashSet<string> { "h1", "h2", "h3" };
+        HashSet<string> actual = (HashSet<string>)dg.GetDependents("a1");
+        Assert.IsTrue(expected.SetEquals(actual));
     }
 
     [TestMethod]
-    public void TestReplaceDependents_NodeDNE_NoChange()
+    public void TestReplaceDependents_NodeDNE_StillReplacesDependents()
     {
         DependencyGraph dg = new DependencyGraph();
+        dg.AddDependency("a1", "a2");
+        dg.AddDependency("a1", "a3");
+        dg.AddDependency("a2", "b4");
+        dg.AddDependency("a3", "c5");
 
+        HashSet<string> newDependents = new HashSet<string> { "h1", "h2", "h3" };
+        dg.ReplaceDependents("p1", newDependents);
+
+        Assert.AreEqual(7, dg.Size);
+
+        HashSet<string> expected = new HashSet<string> { "h1", "h2", "h3" };
+        HashSet<string> actual = (HashSet<string>)dg.GetDependents("p1");
+        Assert.IsTrue(expected.SetEquals(actual));
     }
 
     public void TestReplaceDependents_NodeExists_ReplacesCorrectly()
     {
         DependencyGraph dg = new DependencyGraph();
+        dg.AddDependency("a1", "a2");
+        dg.AddDependency("a1", "a3");
+        dg.AddDependency("a2", "b4");
+        dg.AddDependency("a3", "c5");
 
+        HashSet<string> newDependents = new HashSet<string> { "h1", "h2", "h3" };
+        dg.ReplaceDependents("a1", newDependents);
+
+        Assert.AreEqual(5, dg.Size);
+
+        HashSet<string> expected = new HashSet<string> { "h1", "h2", "h3" };
+        HashSet<string> actual = (HashSet<string>)dg.GetDependents("a1");
+        Assert.IsTrue(expected.SetEquals(actual));
     }
 
     // ---- Tests for ReplaceDependees ----
 
     [TestMethod]
-    public void TestReplaceDependees_EmptyGraph_NoChange()
+    public void TestReplaceDependees_EmptyGraph_StillReplacesDependees()
     {
         DependencyGraph dg = new DependencyGraph();
+        HashSet<string> newDependees = new HashSet<string> { "h1", "h2", "h3" };
+        dg.ReplaceDependees("a3", newDependees);
 
+        Assert.AreEqual(3, dg.Size);
+
+        HashSet<string> expected = new HashSet<string> { "h1", "h2", "h3" };
+        HashSet<string> actual = (HashSet<string>)dg.GetDependees("a3");
+        Assert.IsTrue(expected.SetEquals(actual));
     }
 
     [TestMethod]
-    public void TestReplaceDependees_NodeDNE_NoChange()
+    public void TestReplaceDependees_NodeDNE_StillReplacesDependees()
     {
         DependencyGraph dg = new DependencyGraph();
+        dg.AddDependency("a1", "a2");
+        dg.AddDependency("a1", "a3");
+        dg.AddDependency("a2", "b4");
+        dg.AddDependency("a3", "c5");
 
+        HashSet<string> newDependees = new HashSet<string> { "h1", "h2", "h3" };
+        dg.ReplaceDependees("p3", newDependees);
+
+        Assert.AreEqual(7, dg.Size);
+
+        HashSet<string> expected = new HashSet<string> { "h1", "h2", "h3" };
+        HashSet<string> actual = (HashSet<string>)dg.GetDependees("p3");
+        Assert.IsTrue(expected.SetEquals(actual));
     }
 
     public void TestReplaceDependees_NodeExists_ReplacesCorrectly()
     {
         DependencyGraph dg = new DependencyGraph();
+        dg.AddDependency("a1", "a2");
+        dg.AddDependency("a1", "a3");
+        dg.AddDependency("a2", "b4");
+        dg.AddDependency("a3", "c5");
 
+        HashSet<string> newDependees = new HashSet<string> { "h1", "h2", "h3" };
+        dg.ReplaceDependees("a3", newDependees);
+
+        Assert.AreEqual(6, dg.Size);
+
+        HashSet<string> expected = new HashSet<string> { "h1", "h2", "h3" };
+        HashSet<string> actual = (HashSet<string>)dg.GetDependees("a3");
+        Assert.IsTrue(expected.SetEquals(actual));
     }
 
 }
