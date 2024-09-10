@@ -178,10 +178,10 @@ public class Formula
     private static bool OperOpenParenFollowedByOperCloseParen(string prevToken)
     {
         string operators = @"[+\-*/]";  // regex pattern for operators +, -, *, /
-
-        if (Regex.IsMatch(prevToken, operators) || prevToken.Equals("("))
-            throw new FormulaFormatException("an operator/opening parenthesis is followed by an operator/closing parenthesis");
         
+        if( (!double.TryParse(prevToken, out double result) && Regex.IsMatch(prevToken, operators)) || prevToken.Equals("("))
+            throw new FormulaFormatException("an operator/opening parenthesis is followed by an operator/closing parenthesis");
+
         else
             return true;
     }
