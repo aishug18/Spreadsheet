@@ -53,12 +53,32 @@ namespace CS3500.DependencyGraph;
 public class DependencyGraph
 {
     /// <summary>
+    ///     Stores the size of the Dependency Graph, i.e., the number of ordered pairs/dependencies in the graph.
+    /// </summary>
+    private int size;
+
+    /// <summary>
+    ///     This Dictionary stores the dependents of a node.
+    ///     The dependents of a node are what depends on the node, i.e., what must be calculated AFTER this node.
+    /// </summary>
+    private Dictionary<string, HashSet<string>> dependents;
+
+    /// <summary>
+    ///     This Dictionary stores the dependees of a node.
+    ///     The dependees of a node are what the node depends upon, i.e., what must be calculated BEFORE this node.
+    /// </summary>
+    private Dictionary<string, HashSet<string>> dependees;
+
+
+    /// <summary>
     ///     Initializes a new instance of the <see cref="DependencyGraph"/> class.
     ///     The initial DependencyGraph is empty.
     /// </summary>
     public DependencyGraph()
     {
-
+        dependents = new Dictionary<string, HashSet<string>>();
+        dependees = new Dictionary<string, HashSet<string>>();
+        size = 0;
     }
 
     /// <summary>
@@ -66,7 +86,7 @@ public class DependencyGraph
     /// </summary>
     public int Size
     {
-        get { return 0; }
+        get { return size; }
     }
 
     /// <summary>
@@ -76,8 +96,11 @@ public class DependencyGraph
     /// <returns> true if the node has dependents. </returns>
     public bool HasDependents(string nodeName)
     {
-        // if a node does not exist in the graph, it is considered to have an empty set of dependents and dependees.
-        return false;
+        if (dependents.TryGetValue(nodeName, out HashSet<string>? result) && result.Count > 0)
+            return true;
+        
+        else
+            return false;
     }
 
     /// <summary>
@@ -87,7 +110,11 @@ public class DependencyGraph
     /// <param name="nodeName">The name of the node.</param>
     public bool HasDependees(string nodeName)
     {
-        return false;
+        if (dependees.TryGetValue(nodeName, out HashSet<string>? result) && result.Count > 0)
+            return true;
+
+        else
+            return false;
     }
     
     /// <summary>
@@ -99,7 +126,11 @@ public class DependencyGraph
     /// <returns> The dependents of nodeName. </returns>
     public IEnumerable<string> GetDependents(string nodeName)
     {
-        return new List<string>(); // Choose your own data structure
+        if (dependents.ContainsKey(nodeName))
+            return dependents[nodeName];
+        
+        else
+            return new HashSet<string>();
     }
 
     /// <summary>
@@ -111,7 +142,11 @@ public class DependencyGraph
     /// <returns> The dependees of nodeName. </returns>
     public IEnumerable<string> GetDependees(string nodeName)
     {
-        return new List<string>(); // Choose your own data structure
+        if (dependees.ContainsKey(nodeName))
+            return dependees[nodeName];
+
+        else
+            return new HashSet<string>();
     }
 
     /// <summary>
