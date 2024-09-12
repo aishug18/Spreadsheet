@@ -162,12 +162,11 @@ public class DependencyGraph
     public void AddDependency(string dependee, string dependent)
     {
         // search for dependee in Dictionary dependents, then add dependent to dependee's hashset.
-
-        if (dependents.TryGetValue(dependee, out HashSet<string>? result) && !result.Contains(dependent))   // if dependee is in dependents and its hashset doesn't contain dependent, add dependent to the hash set.
+        if (dependents.TryGetValue(dependee, out HashSet<string>? result) && !result.Contains(dependent))
         {
             result.Add(dependent);
         }
-        else if (!dependents.ContainsKey(dependee)) // else if dependents does not contain dependee, add dependee with a new hashset that only contains dependent.
+        else if (!dependents.ContainsKey(dependee))
         {
             dependents.Add(dependee, new HashSet<string> { dependent });
         }
@@ -177,8 +176,7 @@ public class DependencyGraph
         }
 
         // search for dependent in Dictionary dependees, then add dependee to dependent's hashset.
-
-        if (dependees.TryGetValue(dependent, out HashSet<string>? result2) && !result2.Contains(dependee))   // if dependent is in dependees and its hashset doesn't contain dependee, add dependee to the hash set.
+        if (dependees.TryGetValue(dependent, out HashSet<string>? result2) && !result2.Contains(dependee))
         {
             result2.Add(dependee);
         }
@@ -199,9 +197,16 @@ public class DependencyGraph
     /// <param name="dependent"> The name of the node that cannot be evaluated until after dependee</param>
     public void RemoveDependency(string dependee, string dependent)
     {
+        // if dependee exists in Dependents AND dependent exists in dependees' hashset, then remove dependent from the hashset.
+        // then remove dependee from dependent's hashset in Dependees.
 
-
-
+        if (dependents.TryGetValue(dependee, out HashSet<string>? result) && result.Contains(dependent))
+        {
+            result.Remove(dependent);
+            dependees[dependent].Remove(dependee);
+        }
+        else   // the ordered pair does not exist, so no change.
+            return;
 
         size--;
     }
@@ -214,6 +219,19 @@ public class DependencyGraph
     /// <param name="newDependents"> The new dependents for nodeName</param>
     public void ReplaceDependents(string nodeName, IEnumerable<string> newDependents)
     {
+        // update Dependents:
+        // if nodeName exists in Dependents, then store the size of the existing hashset in a variable (oldSize = dependents[nodeName].Count), then replace its hashset with newDependents --> dependents[nodeName] = newDependents
+        // else, nodeName does NOT exist in Dependents, then dependents.add(nodeName, newDependents).
+
+
+
+        // update Dependees
+        // for each item in newDependents, if item exists in Dependees, then dependees[item].add(nodeName). (BUT FIRST CHECK NODENAME DOES NOT EXIST IN THE HASHSET)
+        // if item does NOT exist in Dependees, then dependees.add(item, new HashSet<string>{nodeName}).
+
+
+
+        // update size --> size = size - oldSize + newDependents.Count
 
     }
 
@@ -227,6 +245,19 @@ public class DependencyGraph
     /// <param name="newDependees"> The new dependees for nodeName</param>
     public void ReplaceDependees(string nodeName, IEnumerable<string> newDependees)
     {
+        // update Dependees:
+        // if nodeName exists in Dependees, then store the size of the existing hashset in a variable (oldSize = dependees[nodeName].Count), then replace its hashset with newDependees --> dependees[nodeName] = newDependees
+        // else, nodeName does NOT exist in Dependees, then dependees.add(nodeName, newDependees).
+
+
+
+        // update Dependents
+        // for each item in newDependees, if item exists in Dependents, then dependents[item].add(nodeName). (BUT FIRST CHECK NODENAME DOES NOT EXIST IN THE HASHSET)
+        // if item does NOT exist in Dependents, then dependents.add(item, new HashSet<string>{nodeName}).
+
+
+
+        // update size --> size = size - oldSize + newDependees.Count
 
     }
 }
