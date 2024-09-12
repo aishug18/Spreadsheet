@@ -161,7 +161,33 @@ public class DependencyGraph
     /// <param name="dependent"> the name of the node that cannot be evaluated until after dependee</param>
     public void AddDependency(string dependee, string dependent)
     {
+        // search for dependee in Dictionary dependents, then add dependent to dependee's hashset.
 
+        if (dependents.TryGetValue(dependee, out HashSet<string>? result) && !result.Contains(dependent))   // if dependee is in dependents and its hashset doesn't contain dependent, add dependent to the hash set.
+        {
+            result.Add(dependent);
+        }
+        else if (!dependents.ContainsKey(dependee)) // else if dependents does not contain dependee, add dependee with a new hashset that only contains dependent.
+        {
+            dependents.Add(dependee, new HashSet<string> { dependent });
+        }
+        else  // the ordered pair already exists, so don't change anything. 
+        {
+            return;
+        }
+
+        // search for dependent in Dictionary dependees, then add dependee to dependent's hashset.
+
+        if (dependees.TryGetValue(dependent, out HashSet<string>? result2) && !result2.Contains(dependee))   // if dependent is in dependees and its hashset doesn't contain dependee, add dependee to the hash set.
+        {
+            result2.Add(dependee);
+        }
+        else // else if dependees does not contain dependent, add dependent with a new hashset that only contains dependee.
+        {
+            dependees.Add(dependent, new HashSet<string> { dependee });
+        }
+
+        size++;
     }
 
     /// <summary>
@@ -174,6 +200,10 @@ public class DependencyGraph
     public void RemoveDependency(string dependee, string dependent)
     {
 
+
+
+
+        size--;
     }
 
     /// <summary>
