@@ -5,6 +5,7 @@
 // (Clarified meaning of dependent and dependee)
 // (Clarified names in solution/project structure)
 // Version 1.3 - H. James de St. Germain Fall 2024
+// Final implementation by Aishwarya Golakoti, 13 September 2024.
 
 namespace CS3500.DependencyGraph;
 
@@ -69,7 +70,6 @@ public class DependencyGraph
     /// </summary>
     private Dictionary<string, HashSet<string>> dependees;
 
-
     /// <summary>
     ///     Initializes a new instance of the <see cref="DependencyGraph"/> class.
     ///     The initial DependencyGraph is empty.
@@ -98,7 +98,6 @@ public class DependencyGraph
     {
         if (dependents.TryGetValue(nodeName, out HashSet<string>? result) && result.Count > 0)
             return true;
-        
         else
             return false;
     }
@@ -112,7 +111,6 @@ public class DependencyGraph
     {
         if (dependees.TryGetValue(nodeName, out HashSet<string>? result) && result.Count > 0)
             return true;
-
         else
             return false;
     }
@@ -126,9 +124,8 @@ public class DependencyGraph
     /// <returns> The dependents of nodeName. </returns>
     public IEnumerable<string> GetDependents(string nodeName)
     {
-        if (dependents.ContainsKey(nodeName))
-            return dependents[nodeName];
-        
+        if (dependents.TryGetValue(nodeName, out HashSet<string>? result))
+            return result;
         else
             return new HashSet<string>();
     }
@@ -142,9 +139,8 @@ public class DependencyGraph
     /// <returns> The dependees of nodeName. </returns>
     public IEnumerable<string> GetDependees(string nodeName)
     {
-        if (dependees.ContainsKey(nodeName))
-            return dependees[nodeName];
-
+        if (dependees.TryGetValue(nodeName, out HashSet<string>? result))
+            return result;
         else
             return new HashSet<string>();
     }
@@ -161,32 +157,22 @@ public class DependencyGraph
     /// <param name="dependent"> the name of the node that cannot be evaluated until after dependee</param>
     public void AddDependency(string dependee, string dependent)
     {
-        // search for dependee in Dictionary dependents, then add dependent to dependee's hashset.
-        if (dependents.TryGetValue(dependee, out HashSet<string>? result) && result.Add(dependent))
-        {
-            size++;
-        }
-        else if(!dependents.ContainsKey(dependee))
+        // update dependents
+        if (!dependents.ContainsKey(dependee))
         {
             dependents.Add(dependee, new HashSet<string> { dependent });
             size++;
         }
+        else if (dependents[dependee].Add(dependent))
+            size++;
         else
-        {
-            return;
-        }
+            return; // the ordered pair already exists, so exit.
 
-        // search for dependent in Dictionary dependees, then add dependee to dependent's hashset.
-        if (dependees.TryGetValue(dependent, out HashSet<string>? result2))
-        {
-            result2.Add(dependee);
-        }
-        else // else if dependees does not contain dependent, add dependent with a new hashset that only contains dependee.
-        {
+        // update dependees
+        if (dependees.TryGetValue(dependent, out HashSet<string>? result))
+            result.Add(dependee);
+        else
             dependees.Add(dependent, new HashSet<string> { dependee });
-        }
-
-        //size++;
     }
 
     /// <summary>
@@ -198,16 +184,13 @@ public class DependencyGraph
     /// <param name="dependent"> The name of the node that cannot be evaluated until after dependee</param>
     public void RemoveDependency(string dependee, string dependent)
     {
-        // if dependee exists in Dependents AND dependent exists in dependees' hashset, then remove dependent from the hashset.
-        // then remove dependee from dependent's hashset in Dependees.
-
         if (dependents.TryGetValue(dependee, out HashSet<string>? result) && result.Contains(dependent))
         {
             result.Remove(dependent);
             dependees[dependent].Remove(dependee);
         }
-        else   // the ordered pair does not exist, so no change.
-            return;
+        else
+            return; // the ordered pair does not exist, so exit.
 
         size--;
     }
@@ -220,45 +203,34 @@ public class DependencyGraph
     /// <param name="newDependents"> The new dependents for nodeName</param>
     public void ReplaceDependents(string nodeName, IEnumerable<string> newDependents)
     {
-        // update Dependents:
-        // if nodeName exists in Dependents, then store the size of the existing hashset in a variable (oldSize = dependents[nodeName].Count), then store old hashset into a variable, then replace its hashset with newDependents --> dependents[nodeName] = newDependents
-        // else, nodeName does NOT exist in Dependents, then dependents.add(nodeName, newDependents).
-        
         int oldSize = 0;
         HashSet<string> oldDependents;
 
+        // update Dependents
         if (dependents.TryGetValue(nodeName, out HashSet<string>? result))
         {
             oldSize = result.Count;
             oldDependents = new HashSet<string>(result);
             dependents[nodeName] = (HashSet<string>)newDependents;
 
-            // removing nodeName from the dependees stuff
             foreach (string item in oldDependents)
             {
                 if(dependees.TryGetValue(item, out HashSet<string>? result2))
-                {
                     result2.Remove(nodeName);
-                }
             }
         }
         else
             dependents.Add(nodeName, (HashSet<string>)newDependents);
 
         // update Dependees
-        // for each item in newDependents, if item exists in Dependees, then dependees[item].add(nodeName).
-        // if item does NOT exist in Dependees, then dependees.add(item, new HashSet<string>{nodeName}).
-
         foreach (string item in newDependents)
         {
             if(dependees.TryGetValue(item, out HashSet<string>? result3))
                 result3.Add(nodeName);
-            
             else
                 dependees.Add(item, new HashSet<string> { nodeName });
         }
 
-        // update size --> size = size - oldSize + newDependents.Count
         size = size - oldSize + newDependents.Count();
 
     }
@@ -273,45 +245,35 @@ public class DependencyGraph
     /// <param name="newDependees"> The new dependees for nodeName</param>
     public void ReplaceDependees(string nodeName, IEnumerable<string> newDependees)
     {
-        // update Dependees:
-        // if nodeName exists in Dependees, then store the size of the existing hashset in a variable (oldSize = dependees[nodeName].Count), then replace its hashset with newDependees --> dependees[nodeName] = newDependees
-        // else, nodeName does NOT exist in Dependees, then dependees.add(nodeName, newDependees).
-
         int oldSize = 0;
         HashSet<string> oldDependees;
 
+        // update Dependees
         if (dependees.TryGetValue(nodeName, out HashSet<string>? result))
         {
             oldSize = result.Count;
             oldDependees = new HashSet<string>(result);
             dependees[nodeName] = (HashSet<string>)newDependees;
 
-            // removing nodeName from the dependents stuff
             foreach (string item in oldDependees)
             {
                 if (dependents.TryGetValue(item, out HashSet<string>? result2))
-                {
                     result2.Remove(nodeName);
-                }
             }
         }
         else
             dependees.Add(nodeName, (HashSet<string>)newDependees);
 
         // update Dependents
-        // for each item in newDependees, if item exists in Dependents, then dependents[item].add(nodeName).
-        // if item does NOT exist in Dependents, then dependents.add(item, new HashSet<string>{nodeName}).
-
         foreach (string item in newDependees)
         {
             if (dependents.TryGetValue(item, out HashSet<string>? result3))
                 result3.Add(nodeName);
-
             else
                 dependents.Add(item, new HashSet<string> { nodeName });
         }
 
-        // update size --> size = size - oldSize + newDependees.Count
         size = size - oldSize + newDependees.Count();
     }
+
 }
