@@ -296,7 +296,7 @@ public class DependencyGraphTests
     // ---- Tests for AddDependency ----
 
     [TestMethod]
-    public void TestAddDepedency_UniquePair_AddsCorrectly()
+    public void TestAddDependency_UniquePair_AddsCorrectly()
     {
         DependencyGraph dg = new DependencyGraph();
         dg.AddDependency("a1", "a2");
@@ -306,6 +306,7 @@ public class DependencyGraphTests
         Assert.IsTrue(dg.HasDependees("a3"));
     }
 
+    [TestMethod]
     public void TestAddDependency_DuplicatePair_NoChange()
     {
         DependencyGraph dg = new DependencyGraph();
@@ -320,7 +321,7 @@ public class DependencyGraphTests
     // ---- Tests for RemoveDependency ----
 
     [TestMethod]
-    public void TestRemoveDepedency_EmptyGraph_NoChange()
+    public void TestRemoveDependency_EmptyGraph_NoChange()
     {
         DependencyGraph dg = new DependencyGraph();
         Assert.AreEqual(0, dg.Size);
@@ -329,7 +330,7 @@ public class DependencyGraphTests
     }
 
     [TestMethod]
-    public void TestRemoveDepedency_DependencyExists_RemoveCorrectly()
+    public void TestRemoveDependency_DependencyExists_RemoveCorrectly()
     {
         DependencyGraph dg = new DependencyGraph();
         dg.AddDependency("a1", "a2");
@@ -339,6 +340,7 @@ public class DependencyGraphTests
         Assert.IsFalse(dg.HasDependees("a2"));
     }
 
+    [TestMethod]
     public void TestRemoveDependency_DependencyDNE_NoChange()
     {
         DependencyGraph dg = new DependencyGraph();
@@ -351,7 +353,7 @@ public class DependencyGraphTests
     // ---- Tests for ReplaceDependents ----
 
     [TestMethod]
-    public void TestReplaceDepedents_EmptyGraph_StillReplacesDependents()
+    public void TestReplaceDependents_EmptyGraph_StillReplacesDependents()
     {
         DependencyGraph dg = new DependencyGraph();
         HashSet<string> newDependents = new HashSet<string> { "h1", "h2", "h3" };
@@ -359,9 +361,13 @@ public class DependencyGraphTests
 
         Assert.AreEqual(3, dg.Size);
 
-        HashSet<string> expected = new HashSet<string> { "h1", "h2", "h3" };
-        HashSet<string> actual = (HashSet<string>)dg.GetDependents("a1");
-        Assert.IsTrue(expected.SetEquals(actual));
+        HashSet<string> expectedDependents = new HashSet<string> { "h1", "h2", "h3" };
+        HashSet<string> actualDependents = (HashSet<string>)dg.GetDependents("a1");
+        Assert.IsTrue(expectedDependents.SetEquals(actualDependents));
+
+        HashSet<string> expectedDependees = new HashSet<string> { "a1" };
+        HashSet<string> actualDependees = (HashSet<string>)dg.GetDependees("h1");
+        Assert.IsTrue(expectedDependees.SetEquals(actualDependees));
     }
 
     [TestMethod]
@@ -373,16 +379,21 @@ public class DependencyGraphTests
         dg.AddDependency("a2", "b4");
         dg.AddDependency("a3", "c5");
 
-        HashSet<string> newDependents = new HashSet<string> { "h1", "h2", "h3" };
+        HashSet<string> newDependents = new HashSet<string> { "h1", "b4", "c5" };
         dg.ReplaceDependents("p1", newDependents);
 
         Assert.AreEqual(7, dg.Size);
 
-        HashSet<string> expected = new HashSet<string> { "h1", "h2", "h3" };
-        HashSet<string> actual = (HashSet<string>)dg.GetDependents("p1");
-        Assert.IsTrue(expected.SetEquals(actual));
+        HashSet<string> expectedDependents = new HashSet<string> { "h1", "b4", "c5" };
+        HashSet<string> actualDependents = (HashSet<string>)dg.GetDependents("p1");
+        Assert.IsTrue(expectedDependents.SetEquals(actualDependents));
+
+        HashSet<string> expectedDependees = new HashSet<string> { "a3", "p1" };
+        HashSet<string> actualDependees = (HashSet<string>)dg.GetDependees("c5");
+        Assert.IsTrue(expectedDependees.SetEquals(actualDependees));
     }
 
+    [TestMethod]
     public void TestReplaceDependents_NodeExists_ReplacesCorrectly()
     {
         DependencyGraph dg = new DependencyGraph();
@@ -396,9 +407,13 @@ public class DependencyGraphTests
 
         Assert.AreEqual(5, dg.Size);
 
-        HashSet<string> expected = new HashSet<string> { "h1", "h2", "h3" };
-        HashSet<string> actual = (HashSet<string>)dg.GetDependents("a1");
-        Assert.IsTrue(expected.SetEquals(actual));
+        HashSet<string> expectedDependents = new HashSet<string> { "h1", "h2", "h3" };
+        HashSet<string> actualDependents = (HashSet<string>)dg.GetDependents("a1");
+        Assert.IsTrue(expectedDependents.SetEquals(actualDependents));
+
+        HashSet<string> expectedDependees = new HashSet<string> {  };
+        HashSet<string> actualDependees = (HashSet<string>)dg.GetDependees("a2");
+        Assert.IsTrue(expectedDependees.SetEquals(actualDependees));
     }
 
     // ---- Tests for ReplaceDependees ----
@@ -412,9 +427,13 @@ public class DependencyGraphTests
 
         Assert.AreEqual(3, dg.Size);
 
-        HashSet<string> expected = new HashSet<string> { "h1", "h2", "h3" };
-        HashSet<string> actual = (HashSet<string>)dg.GetDependees("a3");
-        Assert.IsTrue(expected.SetEquals(actual));
+        HashSet<string> expectedDependees = new HashSet<string> { "h1", "h2", "h3" };
+        HashSet<string> actualDependees = (HashSet<string>)dg.GetDependees("a3");
+        Assert.IsTrue(expectedDependees.SetEquals(actualDependees));
+
+        HashSet<string> expectedDependents = new HashSet<string> { "a3"};
+        HashSet<string> actualDependents = (HashSet<string>)dg.GetDependents("h1");
+        Assert.IsTrue(expectedDependents.SetEquals(actualDependents));
     }
 
     [TestMethod]
@@ -426,16 +445,21 @@ public class DependencyGraphTests
         dg.AddDependency("a2", "b4");
         dg.AddDependency("a3", "c5");
 
-        HashSet<string> newDependees = new HashSet<string> { "h1", "h2", "h3" };
+        HashSet<string> newDependees = new HashSet<string> { "h1", "a2", "a3" };
         dg.ReplaceDependees("p3", newDependees);
 
         Assert.AreEqual(7, dg.Size);
 
-        HashSet<string> expected = new HashSet<string> { "h1", "h2", "h3" };
-        HashSet<string> actual = (HashSet<string>)dg.GetDependees("p3");
-        Assert.IsTrue(expected.SetEquals(actual));
+        HashSet<string> expectedDependees = new HashSet<string> { "h1", "a2", "a3" };
+        HashSet<string> actualDependees = (HashSet<string>)dg.GetDependees("p3");
+        Assert.IsTrue(expectedDependees.SetEquals(actualDependees));
+
+        HashSet<string> expectedDependents = new HashSet<string> { "b4", "p3"};
+        HashSet<string> actualDependents = (HashSet<string>)dg.GetDependents("a2");
+        Assert.IsTrue(expectedDependents.SetEquals(actualDependents));
     }
 
+    [TestMethod]
     public void TestReplaceDependees_NodeExists_ReplacesCorrectly()
     {
         DependencyGraph dg = new DependencyGraph();
@@ -449,9 +473,13 @@ public class DependencyGraphTests
 
         Assert.AreEqual(6, dg.Size);
 
-        HashSet<string> expected = new HashSet<string> { "h1", "h2", "h3" };
-        HashSet<string> actual = (HashSet<string>)dg.GetDependees("a3");
-        Assert.IsTrue(expected.SetEquals(actual));
+        HashSet<string> expectedDependees = new HashSet<string> { "h1", "h2", "h3" };
+        HashSet<string> actualDependees = (HashSet<string>)dg.GetDependees("a3");
+        Assert.IsTrue(expectedDependees.SetEquals(actualDependees));
+
+        HashSet<string> expectedDependents = new HashSet<string> { "a2"};
+        HashSet<string> actualDependents = (HashSet<string>)dg.GetDependents("a1");
+        Assert.IsTrue(expectedDependents.SetEquals(actualDependents));
     }
 
 }
