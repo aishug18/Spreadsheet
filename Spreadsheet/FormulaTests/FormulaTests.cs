@@ -7,7 +7,6 @@
 namespace CS3500.FormulaTests;
 
 using CS3500.Formula;
-using System.Collections;
 
 /// <summary>
 ///   <para>
@@ -652,5 +651,8 @@ public class FormulaSyntaxTests
         string expected = "G3-7.9+300/BD6";
         Assert.AreEqual(expected, actual);
     }
+
+    // ----- more tests for new methods for PS4 -----
+
 
 }
