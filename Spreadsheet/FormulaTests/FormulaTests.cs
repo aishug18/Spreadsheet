@@ -7,6 +7,7 @@
 namespace CS3500.FormulaTests;
 
 using CS3500.Formula;
+using System.Runtime.CompilerServices;
 
 /// <summary>
 ///   <para>
@@ -653,6 +654,222 @@ public class FormulaSyntaxTests
     }
 
     // ----- more tests for new methods for PS4 -----
+    // DO NOT FORGET NECESSARY COMMENTS
 
+    // ----- Tests for == -----
 
+    /// <summary>
+    ///     Test the == operator, checks that two different formula objects are not equal, return false.
+    /// </summary>
+    [TestMethod]
+    public void OperatorEquals_TestNotEqual_False()
+    {
+        Formula f1 = new Formula("a1+4 / 7");
+        Formula f2 = new Formula("k3+9 / (7+2)");
+        Assert.IsFalse(f1 == f2);
+    }
+
+    /// <summary>
+    ///     Test the == operator, checks that two formula objects that are the same exactly (when inputted)
+    ///     are equal, return true.
+    /// </summary>
+    [TestMethod]
+    public void OperatorEquals_TestExactlyEqual_True()
+    {
+        Formula f1 = new Formula("a1+4 / 7");
+        Formula f2 = new Formula("a1+4 / 7");
+        Assert.IsTrue(f1 == f2);
+    }
+
+    /// <summary>
+    ///     Test the == operator, checks that two formula objects that are not the same exactly but the same
+    ///     canonically are equal, return true.
+    /// </summary>
+    [TestMethod]
+    public void OperatorEquals_TestEqualCanonically_True()
+    {
+        Formula f1 = new Formula("a1+4 / 7");
+        Formula f2 = new Formula("A1+4/7");
+        Assert.IsTrue(f1 == f2);
+    }
+
+    // ----- Tests for != -----
+
+    /// <summary>
+    ///     Test the != operator, checks that two different formula objects are not equal, return true.
+    /// </summary>
+    [TestMethod]
+    public void OperatorNotEquals_TestNotEqual_True()
+    {
+        Formula f1 = new Formula("a1+4 / 7");
+        Formula f2 = new Formula("k3+9 / (7+2)");
+        Assert.IsTrue(f1 != f2);
+    }
+
+    /// <summary>
+    ///     Test the != operator, checks that two formula objects that are the same exactly (when inputted)
+    ///     are equal, return false.
+    [TestMethod]
+    public void OperatorNotEquals_TestExactlyEqual_False()
+    {
+        Formula f1 = new Formula("a1+4 / 7");
+        Formula f2 = new Formula("a1+4 / 7");
+        Assert.IsFalse(f1 != f2);
+    }
+
+    /// <summary>
+    ///     Test the != operator, checks that two formula objects that are not the same exactly but the same
+    ///     canonically are equal, return false.
+    /// </summary>
+    [TestMethod]
+    public void OperatorNotEquals_TestEqualCanonically_False()
+    {
+        Formula f1 = new Formula("a1+4 / 7");
+        Formula f2 = new Formula("A1+4/7");
+        Assert.IsFalse(f1 != f2);
+    }
+
+    // ----- Tests for Equals -----
+
+    /// <summary>
+    ///     Test Equals method, checks that if the input is null, return false.
+    /// </summary>
+    [TestMethod]
+    public void Equals_TestNullParameter_False()
+    {
+        Formula f1 = new Formula("4+3");
+        Formula f2 = null;
+        Assert.IsFalse(f1.Equals(f2));
+    }
+
+    /// <summary>
+    ///     Test Equals method, checks that if the input is not a Formula object, return false.
+    /// </summary>
+    [TestMethod]
+    public void Equals_TestNotFormulaParameter_False()
+    {
+        Formula f1 = new Formula("4+3");
+        List<string> list = new List<string> { "4+3" };
+        Assert.IsFalse(f1.Equals(list));
+    }
+
+    [TestMethod]
+    public void Equals_TestDifferentFormulas_False()
+    {
+        Formula f1 = new Formula("a1+4 / 7");
+        Formula f2 = new Formula("k3+9 / (7+2)");
+        Assert.IsFalse(f1.Equals(f2));
+    }
+
+    /// <summary>
+    ///     Test Equals method, checks that two Formula objects have exactly the same formulas.
+    /// </summary>
+    [TestMethod]
+    public void Equals_TestExactlySameFormulas_True()
+    {
+        Formula f1 = new Formula("a1+4 / 7");
+        Formula f2 = new Formula("a1+4 / 7");
+        Assert.IsTrue(f1.Equals(f2));
+    }
+
+    /// <summary>
+    ///     Test Equals method, checks that two Formula objects have not exactly the same formulas but the 
+    ///     same canonical formulas.
+    /// </summary>
+    [TestMethod]
+    public void Equals_TestCanonicallySameFormulas_True()
+    {
+        Formula f1 = new Formula("a1+4 / 7");
+        Formula f2 = new Formula("A1+4/7");
+        Assert.IsTrue(f1.Equals(f2));
+    }
+
+    // ----- Tests for Evaluate -----
+
+    /// <summary>
+    ///     Test Evaluate method, using a formula with no variables, so the input delegate just returns 0.
+    /// </summary>
+    [TestMethod]
+    public void Evaluate_FormulaNoVars_EvaluateCorrectly()
+    {
+        Formula f1 = new Formula("4+5 / (7-4)");
+        Assert.AreEqual(3, f1.Evaluate(a => 0));
+    }
+
+    /// <summary>
+    ///     Test Evaluate method, using a formula with variables, checks that the delegate is used properly.
+    /// </summary>
+    [TestMethod]
+    public void Evaluate_FormulaWithVars_EvaluateCorrectly()
+    {
+        Formula f1 = new Formula("(4*b2) / (a1 - 2)");
+        Assert.AreEqual(4, f1.Evaluate(a => { if (a == "A1") return 5; else return 3; }));
+    }
+
+    /// <summary>
+    ///     Test Evaluate method, using a formula with variables, checks that Evaluate returns a FormulaError
+    ///     because a variable in the formula doesn't have a value.
+    /// </summary>
+    [TestMethod]
+    public void Evaluate_FormulaWithVarsWithNoValue_ReturnFormulaError()
+    {
+        Formula f1 = new Formula("(4*b2) / (a1 - 2)");
+        Assert.IsInstanceOfType<FormulaError>(f1.Evaluate(a => { if (a == "A1") return 5; else throw new ArgumentException(); }));
+    }
+
+    /// <summary>
+    ///     Test Evaluate method, using a formula with no variables, checks that dividing by 0 returns a FormulaError.
+    /// </summary>
+    [TestMethod]
+    public void Evaluate_FormulaNoVarsDivideByZero_ReturnFormulaError()
+    {
+        Formula f1 = new Formula("(5 - 2/0");
+        Assert.IsInstanceOfType<FormulaError>(f1.Evaluate(a => 0));
+    }
+
+    /// <summary>
+    ///     Test Evaluate method, using a formula with no variables, checks that a variable=0 and dividing by
+    ///     the variable returns a FormulaError.
+    /// </summary>
+    [TestMethod]
+    public void Evaluate_FormulaVarDivideByZero_ReturnFormulaError()
+    {
+        Formula f1 = new Formula("5 - 2/a2");
+        Assert.IsInstanceOfType<FormulaError>(f1.Evaluate(a => { if (a == "A2") return 0; else throw new ArgumentException(); }));
+    }
+
+    /// <summary>
+    ///     Test Evaluate method, using a formula with no variables, checks that dividing by 0 after ) returns
+    ///     a FormulaError.
+    /// </summary>
+    [TestMethod]
+    public void Evaluate_FormulaCloseParenThenDivideByZero_ReturnFormulaError()
+    {
+        Formula f1 = new Formula("(5 - 2)/0");
+        Assert.IsInstanceOfType<FormulaError>(f1.Evaluate(a => 0));
+    }
+
+    // ----- Tests for GetHashCode -----
+
+    /// <summary>
+    ///     Test GetHashCode, checks that if f1.Equals(f2), then their hash codes are equal.
+    /// </summary>
+    [TestMethod]
+    public void GetHashCode_TwoEqualFormulas_EqualHashCode()
+    {
+        Formula f1 = new Formula("a1+4 / 7");
+        Formula f2 = new Formula("a1+4 / 7");
+        Assert.IsTrue(f1.GetHashCode() == f2.GetHashCode());
+    }
+
+    /// <summary>
+    ///     Test GetHashCode, checks that if !f1.Equals(f2), then their hash codes are not equal.
+    /// </summary>
+    [TestMethod]
+    public void GetHashCode_TwoDifferentFormulas_NotEqualHashCode()
+    {
+        Formula f1 = new Formula("a1+4 / 7");
+        Formula f2 = new Formula("(5 - 2)/a2");
+        Assert.IsTrue(f1.GetHashCode() != f2.GetHashCode());
+    }
 }

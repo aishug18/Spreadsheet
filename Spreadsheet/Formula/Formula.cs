@@ -317,6 +317,8 @@ public class Formula
         return results;
     }
 
+    // ----- NEW METHODS TO TEST -----
+
     /// <summary>
     ///     <para>
     ///         Reports whether f1 == f2, using the notion of equality from the <see cref="Equals"/> method.
@@ -327,8 +329,7 @@ public class Formula
     /// <returns> true if the two formulas are the same.</returns>
     public static bool operator ==(Formula f1, Formula f2)
     {
-        // FIXME: Write this method
-        throw new NotImplementedException();
+       return f1.Equals(f2);
     }
 
     /// <summary>
@@ -341,8 +342,7 @@ public class Formula
     /// <returns> true if the two formulas are not equal to each other.</returns>
     public static bool operator !=(Formula f1, Formula f2)
     {
-        // FIXME: Write this method
-        throw new NotImplementedException();
+        return !f1.Equals(f2);
     }
 
     /// <summary>
@@ -365,7 +365,10 @@ public class Formula
     public override bool Equals(object? obj)
     {
         // FIXME: write this method
-        throw new NotImplementedException();
+        if (obj == null || !(obj is Formula))
+            return false;
+        else
+            return canonicalFormula.Equals(((Formula)obj).canonicalFormula);
     }
 
     /// <summary>
@@ -405,14 +408,13 @@ public class Formula
     ///     <para>
     ///         Returns a hash code for this Formula. If f1.Equals(f2), then it must be the
     ///         case that f1.GetHashCode() == f2.GetHashCode(). Ideally, the probability that two
-    ///     randomly-generated unequal Formulas have the same hash code should be extremely small.
+    ///         randomly-generated unequal Formulas have the same hash code should be extremely small.
     ///     </para>
     /// </summary>
     /// <returns> The hashcode for the object. </returns>
     public override int GetHashCode()
     {
-        // FIXME: Implement the required algorithm here.
-        throw new NotImplementedException();
+        return canonicalFormula.GetHashCode();
     }
 
 }
