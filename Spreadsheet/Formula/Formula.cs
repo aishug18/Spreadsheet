@@ -15,7 +15,9 @@
 // </summary>
 namespace CS3500.Formula;
 
+using System.Diagnostics;
 using System.Text.RegularExpressions;
+using static System.Net.Mime.MediaTypeNames;
 
 /// <summary>
 ///     <para>
@@ -466,32 +468,95 @@ public class Formula
             // if token is + or -
             else if (Regex.IsMatch(token, @"[\+\-]"))
             {
+                if (operators.Count > 0 && values.Count > 0 && Regex.IsMatch(operators.Peek(), @"[\+\-]"))
+                {
+                    // If + or - is at the top of the operator stack, pop the value stack twice and the
+                    // operator stack once, then apply the popped operator to the popped numbers, then push
+                    // the result onto the value stack.
+                    // then Push t onto the operator stack
 
+                    double value1 = values.Pop();
+                    double value2 = values.Pop();
+                    string oper = operators.Pop();
+                    double result;
+
+                    if(oper == "+")
+                    {
+                        result = value2 + value1;
+                    }
+                    else
+                    {
+                        result = value2 - value1;
+                    }
+
+                    values.Push(result);
+                    operators.Push(token);
+                }
+                else   // else, push t onto the operator stack
+                {
+                    operators.Push(token);
+                }
             }
 
             // if token is * or /
             else if (Regex.IsMatch(token, @"[\\*/]"))
             {
-
+                operators.Push(token);
             }
 
-            // if token is a closing parenthesis
+            // if token is (
             else if (token == "(")
             {
-
+                operators.Push(token);
             }
 
-            // if token is a closing parenthesis
+            // if token is )
             else if (token == ")")
             {
                 // check division by 0
+
+                // second popped number then popped operator then first popped number (example: firstPop = 3, secondPop = 6,
+                // popOper = +, so result = 6 + 3.
+
+
+
+                // If + or - is at the top of the operator stack, pop the value stack twice and the operator
+                // stack once. Apply the popped operator to the popped numbers. Push the result onto the
+                // value stack.
+                // Next, the top of the operator stack will be a '('.Pop it.
+                // Finally, if *or / is at the top of the operator stack, pop the value stack twice and the
+                // operator stack once. Apply the popped operator to the popped numbers. Push the result onto
+                // the value stack.
+
+                // else if *or / is at the top of the operator stack, pop the value stack twice and the
+                // operator stack once. Apply the popped operator to the popped numbers. Push the result onto
+                // the value stack.
+                // Next, the top of the operator stack will be a '('.Pop it.
+
+                // else, the top of the operator stack will be a '('.Pop it.
             }
 
         }
 
+        if(operators.Count > 0)
+        {
+            string oper = operators.Pop();
+            double value1 = values.Pop();
+            double value2 = values.Pop();
 
-
-        return 1;
+            if(oper == "+")
+            {
+                return value2 + value1;
+            }
+            else
+            {
+                return value2 - value1;
+            }
+        }
+        else
+        {
+            return values.Pop();
+        }
     }
 
     /// <summary>

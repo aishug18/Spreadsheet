@@ -823,7 +823,7 @@ public class FormulaSyntaxTests
     [TestMethod]
     public void Evaluate_FormulaNoVarsDivideByZero_ReturnFormulaError()
     {
-        Formula f1 = new Formula("(5 - 2/0");
+        Formula f1 = new Formula("5 - 2/0");
         Assert.IsInstanceOfType<FormulaError>(f1.Evaluate(a => 0));
     }
 
