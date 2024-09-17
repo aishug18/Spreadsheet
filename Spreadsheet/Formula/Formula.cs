@@ -364,7 +364,6 @@ public class Formula
     /// </returns>
     public override bool Equals(object? obj)
     {
-        // FIXME: write this method
         if (obj == null || !(obj is Formula))
             return false;
         else
@@ -401,7 +400,98 @@ public class Formula
     public object Evaluate(Lookup lookup)
     {
         // FIXME: Implement the required algorithm here.
-        throw new NotImplementedException();
+
+        Stack<double> values = new Stack<double>();
+        Stack<string> operators = new Stack<string>();
+        List<string> tokens = GetTokens(canonicalFormula);
+        
+
+        foreach(string token in tokens)
+        {
+            // if token is a number
+            if (double.TryParse(token, out double tNumber))
+            {
+                if (operators.Count > 0 && values.Count > 0 && Regex.IsMatch(operators.Peek(), @"[\\*/]"))   // if * or / is at the top of the operator stack
+                {
+                    double value = values.Pop();
+                    string oper = operators.Pop();
+                    double result;
+
+                    // check division by 0
+
+                    if (oper == "/")
+                        if (tNumber == 0)
+                            return new FormulaError("division by zero");
+                        else
+                            result = value / tNumber;
+                    else
+                        result = value * tNumber;
+
+                    values.Push(result);
+                }
+                else   // otherwise, push token onto the value stack.
+                    values.Push(tNumber);
+            }
+
+            // if token is a variable
+            else if (IsVar(token))
+            {
+                try
+                {
+                    if (operators.Count > 0 && values.Count > 0 && Regex.IsMatch(operators.Peek(), @"[\\*/]"))   // if * or / is at the top of the operator stack
+                    {
+                        double value = values.Pop();
+                        string oper = operators.Pop();
+                        double result;
+
+                        if (oper == "/")
+                            if (lookup(token) == 0)
+                                return new FormulaError("division by zero");
+                            else
+                                result = value / lookup(token);
+                        else
+                            result = value * lookup(token);
+
+                        values.Push(result);
+                    }
+                    else   // otherwise, push token onto the value stack.
+                        values.Push(lookup(token));
+                }
+                catch (ArgumentException)
+                {
+                    return new FormulaError("variable has no value");
+                }
+            }
+
+            // if token is + or -
+            else if (Regex.IsMatch(token, @"[\+\-]"))
+            {
+
+            }
+
+            // if token is * or /
+            else if (Regex.IsMatch(token, @"[\\*/]"))
+            {
+
+            }
+
+            // if token is a closing parenthesis
+            else if (token == "(")
+            {
+
+            }
+
+            // if token is a closing parenthesis
+            else if (token == ")")
+            {
+                // check division by 0
+            }
+
+        }
+
+
+
+        return 1;
     }
 
     /// <summary>
