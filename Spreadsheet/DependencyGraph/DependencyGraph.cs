@@ -205,22 +205,26 @@ public class DependencyGraph
     {
         int oldSize = 0;
         HashSet<string> oldDependents;
+        HashSet<string> newDeps = new HashSet<string>(newDependents);
 
         // update Dependents
         if (dependents.TryGetValue(nodeName, out HashSet<string>? result))
         {
             oldSize = result.Count;
             oldDependents = new HashSet<string>(result);
-            dependents[nodeName] = (HashSet<string>)newDependents;
+            dependents[nodeName] = newDeps;
 
             foreach (string item in oldDependents)
             {
-                if(dependees.TryGetValue(item, out HashSet<string>? result2))
+                if (dependees.TryGetValue(item, out HashSet<string>? result2))
                     result2.Remove(nodeName);
             }
         }
         else
-            dependents.Add(nodeName, (HashSet<string>)newDependents);
+        {
+            
+            dependents.Add(nodeName, newDeps);
+        }
 
         // update Dependees
         foreach (string item in newDependents)
@@ -247,13 +251,14 @@ public class DependencyGraph
     {
         int oldSize = 0;
         HashSet<string> oldDependees;
+        HashSet<string> newDees = new HashSet<string>(newDependees);
 
         // update Dependees
         if (dependees.TryGetValue(nodeName, out HashSet<string>? result))
         {
             oldSize = result.Count;
             oldDependees = new HashSet<string>(result);
-            dependees[nodeName] = (HashSet<string>)newDependees;
+            dependees[nodeName] = newDees;
 
             foreach (string item in oldDependees)
             {
@@ -262,7 +267,7 @@ public class DependencyGraph
             }
         }
         else
-            dependees.Add(nodeName, (HashSet<string>)newDependees);
+            dependees.Add(nodeName, newDees);
 
         // update Dependents
         foreach (string item in newDependees)
