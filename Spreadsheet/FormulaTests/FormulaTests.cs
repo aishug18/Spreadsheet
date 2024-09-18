@@ -792,8 +792,22 @@ public class FormulaSyntaxTests
     [TestMethod]
     public void Evaluate_FormulaNoVars_EvaluateCorrectly()
     {
-        Formula f1 = new Formula("4+5 / (7-4)");
-        Assert.AreEqual(3, f1.Evaluate(a => 0));
+        Formula f1 = new Formula("(4+5) / (7-4)");
+        Assert.AreEqual(3.0, (double)f1.Evaluate(a => 0));
+    }
+
+    [TestMethod]
+    public void Evaluate_FormulaDivisionByZero_ReturnFormulaError()
+    {
+        Formula f1 = new Formula("(5/(6 - 2*3) - 4) + 8");
+        Assert.IsInstanceOfType(f1.Evaluate(a => 0), typeof(FormulaError));
+    }
+
+    [TestMethod]
+    public void Evaluate_ReallyBigFormula_EvaluateCorrectly()
+    {
+        Formula f1 = new Formula("( ((5+3) * (12-4)) + ((6*7)/2)-8 ) * ( ((10-2) + (4*3))/5 ) +9");
+        Assert.AreEqual(317.0, (double)f1.Evaluate(a => 0));
     }
 
     /// <summary>
@@ -803,7 +817,7 @@ public class FormulaSyntaxTests
     public void Evaluate_FormulaWithVars_EvaluateCorrectly()
     {
         Formula f1 = new Formula("(4*b2) / (a1 - 2)");
-        Assert.AreEqual(4, f1.Evaluate(a => { if (a == "A1") return 5; else return 3; }));
+        Assert.AreEqual(4.0, (double)f1.Evaluate(a => { if (a == "A1") return 5; else return 3; }));
     }
 
     /// <summary>
@@ -814,7 +828,7 @@ public class FormulaSyntaxTests
     public void Evaluate_FormulaWithVarsWithNoValue_ReturnFormulaError()
     {
         Formula f1 = new Formula("(4*b2) / (a1 - 2)");
-        Assert.IsInstanceOfType<FormulaError>(f1.Evaluate(a => { if (a == "A1") return 5; else throw new ArgumentException(); }));
+        Assert.IsInstanceOfType(f1.Evaluate(a => { if (a == "A1") return 5; else throw new ArgumentException(); }), typeof (FormulaError));
     }
 
     /// <summary>
@@ -824,7 +838,7 @@ public class FormulaSyntaxTests
     public void Evaluate_FormulaNoVarsDivideByZero_ReturnFormulaError()
     {
         Formula f1 = new Formula("5 - 2/0");
-        Assert.IsInstanceOfType<FormulaError>(f1.Evaluate(a => 0));
+        Assert.IsInstanceOfType(f1.Evaluate(a => 0), typeof(FormulaError));
     }
 
     /// <summary>
@@ -835,7 +849,7 @@ public class FormulaSyntaxTests
     public void Evaluate_FormulaVarDivideByZero_ReturnFormulaError()
     {
         Formula f1 = new Formula("5 - 2/a2");
-        Assert.IsInstanceOfType<FormulaError>(f1.Evaluate(a => { if (a == "A2") return 0; else throw new ArgumentException(); }));
+        Assert.IsInstanceOfType(f1.Evaluate(a => { if (a == "A2") return 0; else throw new ArgumentException(); }), typeof(FormulaError));
     }
 
     /// <summary>
@@ -846,7 +860,7 @@ public class FormulaSyntaxTests
     public void Evaluate_FormulaCloseParenThenDivideByZero_ReturnFormulaError()
     {
         Formula f1 = new Formula("(5 - 2)/0");
-        Assert.IsInstanceOfType<FormulaError>(f1.Evaluate(a => 0));
+        Assert.IsInstanceOfType(f1.Evaluate(a => 0), typeof(FormulaError));
     }
 
     // ----- Tests for GetHashCode -----
