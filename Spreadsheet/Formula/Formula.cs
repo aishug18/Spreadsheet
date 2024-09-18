@@ -9,15 +9,14 @@
 //      with the other required information.
 //  </para>
 //  <para>
-//      You should remove/add/adjust comments in your file as appropriate
-//      to represent your work and any changes you make.
+//      For PS4, CS3500.
 //  </para>
+//  <author> Aishwarya Golakoti </author>
+//  <date> 18 September 2024 </date>
 // </summary>
 namespace CS3500.Formula;
 
-using System.Diagnostics;
 using System.Text.RegularExpressions;
-using static System.Net.Mime.MediaTypeNames;
 
 /// <summary>
 ///     <para>
@@ -166,7 +165,6 @@ public class Formula
         
         else
             return true;
-
     }
 
     /// <summary>
@@ -319,8 +317,6 @@ public class Formula
         return results;
     }
 
-    // ----- NEW METHODS TO TEST -----
-
     /// <summary>
     ///     <para>
     ///         Reports whether f1 == f2, using the notion of equality from the <see cref="Equals"/> method.
@@ -401,32 +397,28 @@ public class Formula
     /// <returns> Either a double or a FormulaError, based on evaluating the formula.</returns>
     public object Evaluate(Lookup lookup)
     {
-        // FIXME: Implement the required algorithm here.
-
         Stack<double> values = new Stack<double>();
         Stack<string> operators = new Stack<string>();
         List<string> tokens = GetTokens(canonicalFormula);
-
 
         foreach (string token in tokens)
         {
             // if token is a number
             if (double.TryParse(token, out double tNumber))
             {
-                if (values.Count > 0 && IsOnTop(operators, @"[\\*/]"))   // if * or / is at the top of the operator stack
+                if (IsOnTop(values, operators, @"[\*/]"))
                 {
                     double value = values.Pop();
                     string oper = operators.Pop();
 
-                    object result = OperMultiplyDivide(tNumber, value, oper);
-                    if (result is FormulaError)
+                    object result = ApplyOperator(tNumber, value, oper);
+
+                    if (result is FormulaError) // division by zero occurs
                         return (FormulaError)result;
                     else
-                    {
                         values.Push((double)result);
-                    }
                 }
-                else   // otherwise, push token onto the value stack.
+                else
                     values.Push(tNumber);
             }
 
@@ -435,20 +427,19 @@ public class Formula
             {
                 try
                 {
-                    if (values.Count > 0 && IsOnTop(operators, @"[\\*/]"))   // if * or / is at the top of the operator stack
+                    if (IsOnTop(values, operators, @"[\*/]"))
                     {
                         double value = values.Pop();
                         string oper = operators.Pop();
 
-                        object result = OperMultiplyDivide(lookup(token), value, oper);
-                        if (result is FormulaError)
+                        object result = ApplyOperator(lookup(token), value, oper);
+
+                        if (result is FormulaError) // division by zero occurs
                             return (FormulaError)result;
                         else
-                        {
                             values.Push((double)result);
-                        }
                     }
-                    else   // otherwise, push token onto the value stack.
+                    else
                         values.Push(lookup(token));
                 }
                 catch (ArgumentException)
@@ -460,139 +451,110 @@ public class Formula
             // if token is + or -
             else if (Regex.IsMatch(token, @"[\+\-]"))
             {
-                if (values.Count > 0 && IsOnTop(operators, @"[\+\-]"))
-                {
-                    // If + or - is at the top of the operator stack, pop the value stack twice and the
-                    // operator stack once, then apply the popped operator to the popped numbers, then push
-                    // the result onto the value stack.
-
-                    double value1 = values.Pop();
-                    double value2 = values.Pop();
-                    string oper = operators.Pop();
-                   
-                    double result = OperAddSubtract(value1, value2, oper);
-
-                    values.Push(result);
-                }
+                if (IsOnTop(values, operators, @"[\+\-]"))
+                    values.Push((double)PopAndApplyOper(values, operators));
 
                 operators.Push(token);
             }
 
             // if token is * or /
-            else if (Regex.IsMatch(token, @"[\\*/]"))
-            {
+            else if (Regex.IsMatch(token, @"[\*/]"))
                 operators.Push(token);
-            }
 
             // if token is (
             else if (token == "(")
-            {
                 operators.Push(token);
-            }
 
             // if token is )
             else if (token == ")")
             {
-                // Step 1: If + or - is at the top of the operator stack, pop the value stack twice and the
-                // operator stack once. Apply the popped operator to the popped numbers. Push the result onto
-                // the value stack.
-                if (values.Count > 0 && IsOnTop(operators, @"[\+\-]"))
+                if (IsOnTop(values, operators, @"[\+\-]"))
+                    values.Push((double)PopAndApplyOper(values, operators));
+
+                operators.Pop();    // pop "("
+
+                if (IsOnTop(values, operators, @"[\*/]"))
                 {
-                    double value1 = values.Pop();
-                    double value2 = values.Pop();
-                    string oper = operators.Pop();
-                    double result = OperAddSubtract(value1, value2, oper);
+                    object result = PopAndApplyOper(values, operators);
 
-                    values.Push(result);
-                }
-
-                // Step 2: the top of the operator stack will be a '('. Pop it.
-                operators.Pop();
-
-                // Step 3: if * or / is at the top of the operator stack, pop the value stack twice and the
-                // operator stack once. Apply the popped operator to the popped numbers. Push the result onto
-                // the value stack.
-                if (values.Count > 0 && IsOnTop(operators, @"[\\*/]"))   // if * or / is at the top of the operator stack
-                {
-                    double value1 = values.Pop();
-                    double value2 = values.Pop();
-                    string oper = operators.Pop();
-
-                    object result = OperMultiplyDivide(value1, value2, oper);
-                    if (result is FormulaError)
+                    if (result is FormulaError) // division by zero occurs
                         return (FormulaError)result;
                     else
-                    {
                         values.Push((double)result);
-                    }
-
                 }
             }
         }
 
+        // after processing all tokens in formula
         if(operators.Count > 0)
-        {
-            string oper = operators.Pop();
-            double value1 = values.Pop();
-            double value2 = values.Pop();
-
-            return OperAddSubtract(value1, value2, oper);
-        }
+            return (double)PopAndApplyOper(values, operators);
         else
-        {
             return values.Pop();
-        }
     }
 
     /// <summary>
     ///     Private helper method to determine whether a certain operator is on top of the operators stack.
     /// </summary>
+    /// <param name="values"> the values stack</param>
     /// <param name="operators"> the operators stack</param>
     /// <param name="regex"> the regular expression that matches certain operators </param>
     /// <returns> 
-    ///     True if the operator stack is not empty and that the top of the operator stack matches the regex.
+    ///     True if the value and operator stacks are not empty and that the top of the operator stack 
+    ///     matches the regex.
     /// </returns>
-    private bool IsOnTop(Stack<string> operators, string regex)
+    private bool IsOnTop(Stack<double> values, Stack<string> operators, string regex)
     {
-        return (operators.Count > 0 && Regex.IsMatch(operators.Peek(), regex));
+        return values.Count > 0 && operators.Count > 0 && Regex.IsMatch(operators.Peek(), regex);
     }
 
     /// <summary>
-    ///     Private helper method for if the operator is + or -, applies the operator to the input values.
+    ///     Private helper method to apply an operator to two values.
     /// </summary>
-    /// <param name="value1"></param>
-    /// <param name="value2"></param>
-    /// <param name="oper"> the operator, either "+" or "-"</param>
-    /// <returns> the result when applying oper to value1 and value2 </returns>
-    private double OperAddSubtract(double value1, double value2, string oper)
+    /// <param name="value1"> the first value </param>
+    /// <param name="value2"> the second value </param>
+    /// <param name="oper"> the operator</param>
+    /// <returns>
+    ///     the resulting double after applying the operator to the two values or a 
+    ///     <see cref="FormulaError"/> if division by zero occurs.
+    /// </returns>
+    private object ApplyOperator(double value1, double value2, string oper)
     {
         if (oper == "+")
-        {
             return value2 + value1;
-        }
-        else
-        {
-            return value2 - value1;
-        }
-    }
 
-    private object OperMultiplyDivide(double value1, double value2, string oper)
-    {
-        if (oper == "/")
+        else if (oper == "-")
+            return value2 - value1;
+        
+        else if (oper == "*")
+            return value2 * value1;
+        
+        else
         {
             if (value1 == 0)
                 return new FormulaError("division by zero");
             else
-                return (double)(value2 / value1);
-        }
-        else
-        {
-            return (double)(value2 * value1);
+                return value2 / value1;
         }
     }
-    
-    
-    
+
+    /// <summary>
+    ///     Private helper method to pop the values stack twice and the operator stack once, then applies
+    ///     the popped operator to the popped values by calling <see cref="ApplyOperator"/>.
+    /// </summary>
+    /// <param name="values"> the Stack of values </param>
+    /// <param name="operators"> the Stack of operators </param>
+    /// <returns>
+    ///     the result from <see cref="ApplyOperator"/>: the resulting double after applying the popped 
+    ///     operator to the popped values or a <see cref="FormulaError"/> if division by zero occurs.
+    /// </returns>
+    private object PopAndApplyOper(Stack<double> values, Stack<string> operators)
+    {
+        double value1 = values.Pop();
+        double value2 = values.Pop();
+        string oper = operators.Pop();
+
+        return ApplyOperator(value1, value2, oper);
+    }
 
     /// <summary>
     ///     <para>

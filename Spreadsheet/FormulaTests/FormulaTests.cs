@@ -1,13 +1,15 @@
 // <copyright file="FormulaSyntaxTests.cs" company="UofU-CS3500">
 //   Copyright 2024 UofU-CS3500. All rights reserved.
 // </copyright>
-// <authors> Aishwarya Golakoti </authors>
-// <date> _ </date>
+// <para>
+//      For PS4, CS3500.
+// </para>
+// <author> Aishwarya Golakoti </author>
+// <date> 18 September 2024 </date>
 
 namespace CS3500.FormulaTests;
 
 using CS3500.Formula;
-using System.Runtime.CompilerServices;
 
 /// <summary>
 ///   <para>
@@ -24,14 +26,6 @@ public class FormulaSyntaxTests
     ///     This test makes sure the right kind of exception is thrown
     ///     when trying to create a formula with no tokens.
     ///   </para>
-    ///   <remarks>
-    ///     <list type="bullet">
-    ///       <item>
-    ///         We use the _ (discard) notation because the formula object
-    ///         is not used after that point in the method.
-    ///       </item>
-    ///     </list>
-    ///   </remarks>
     /// </summary>
     [TestMethod]
     [ExpectedException(typeof(FormulaFormatException))]
@@ -653,13 +647,10 @@ public class FormulaSyntaxTests
         Assert.AreEqual(expected, actual);
     }
 
-    // ----- more tests for new methods for PS4 -----
-    // DO NOT FORGET NECESSARY COMMENTS
-
     // ----- Tests for == -----
 
     /// <summary>
-    ///     Test the == operator, checks that two different formula objects are not equal, return false.
+    ///     Test the == operator.
     /// </summary>
     [TestMethod]
     public void OperatorEquals_TestNotEqual_False()
@@ -696,7 +687,7 @@ public class FormulaSyntaxTests
     // ----- Tests for != -----
 
     /// <summary>
-    ///     Test the != operator, checks that two different formula objects are not equal, return true.
+    ///     Test the != operator.
     /// </summary>
     [TestMethod]
     public void OperatorNotEquals_TestNotEqual_True()
@@ -831,18 +822,15 @@ public class FormulaSyntaxTests
         Assert.IsInstanceOfType(f1.Evaluate(a => { if (a == "A1") return 5; else throw new ArgumentException(); }), typeof (FormulaError));
     }
 
-    /// <summary>
-    ///     Test Evaluate method, using a formula with no variables, checks that dividing by 0 returns a FormulaError.
-    /// </summary>
     [TestMethod]
-    public void Evaluate_FormulaNoVarsDivideByZero_ReturnFormulaError()
+    public void Evaluate_FormulaDivideByZero_ReturnFormulaError()
     {
         Formula f1 = new Formula("5 - 2/0");
         Assert.IsInstanceOfType(f1.Evaluate(a => 0), typeof(FormulaError));
     }
 
     /// <summary>
-    ///     Test Evaluate method, using a formula with no variables, checks that a variable=0 and dividing by
+    ///     Test Evaluate method, using a formula with variables, checks that a variable=0 and dividing by
     ///     the variable returns a FormulaError.
     /// </summary>
     [TestMethod]
@@ -852,15 +840,42 @@ public class FormulaSyntaxTests
         Assert.IsInstanceOfType(f1.Evaluate(a => { if (a == "A2") return 0; else throw new ArgumentException(); }), typeof(FormulaError));
     }
 
-    /// <summary>
-    ///     Test Evaluate method, using a formula with no variables, checks that dividing by 0 after ) returns
-    ///     a FormulaError.
-    /// </summary>
     [TestMethod]
     public void Evaluate_FormulaCloseParenThenDivideByZero_ReturnFormulaError()
     {
         Formula f1 = new Formula("(5 - 2)/0");
         Assert.IsInstanceOfType(f1.Evaluate(a => 0), typeof(FormulaError));
+    }
+
+    // more complex formulas to evaluate
+
+    [TestMethod]
+    public void Evaluate_ComplexFormula1_EvaluateCorrectly()
+    {
+        Formula f1 = new Formula("( ( (12 + 3*a2) - (20/5) ) / (b7-5) ) + ( ( (6*7) + (18-8) ) /A2 )");
+        Assert.AreEqual(15.0, (double)f1.Evaluate(a => { if (a == "A2") return 4; else if (a == "B7") return 15; else throw new ArgumentException(); }));
+
+    }
+
+    [TestMethod]
+    public void Evaluate_ComplexFormula2_EvaluateCorrectly()
+    {
+        Formula f1 = new Formula("( (hB7*3/Hb7) - (7+4) ) - (8/2 + 6*4)/2");
+        Assert.AreEqual(-22.0, (double)f1.Evaluate(a => { if (a == "HB7") return 5; else throw new ArgumentException(); }));
+    }
+
+    [TestMethod]
+    public void Evaluate_ComplexFormula3_EvaluateCorrectly()
+    {
+        Formula f1 = new Formula("7 + 2 * 4 / 8 - 12 * 6 / 3 + 82 - 72 / 2 + 8 * 4");
+        Assert.AreEqual(62.0, (double)f1.Evaluate(a => 0));
+    }
+
+    [TestMethod]
+    public void Evaluate_ComplexFormula4_EvaluateCorrectly()
+    {
+        Formula f1 = new Formula("1 / 4 + 7 * 5 * 4 / 2 - 65 + 4 / 2");
+        Assert.AreEqual(7.25, (double)f1.Evaluate(a => 0));
     }
 
     // ----- Tests for GetHashCode -----
