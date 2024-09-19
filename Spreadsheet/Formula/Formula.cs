@@ -362,7 +362,7 @@ public class Formula
     /// </returns>
     public override bool Equals(object? obj)
     {
-        if(obj is not Formula f)
+        if(obj is not Formula)
             return false;
         return canonicalFormula.Equals(((Formula)obj).canonicalFormula);
     }
