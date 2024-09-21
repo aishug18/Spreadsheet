@@ -7,9 +7,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Formula", "Formula\Formula.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FormulaTests", "FormulaTests\FormulaTests.csproj", "{8C82D875-54B8-43EC-AC4F-4E831ED9ADD1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DependencyGraph", "DependencyGraph\DependencyGraph.csproj", "{6503E448-1F0F-4644-8A5C-85219D5AF453}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DependencyGraph", "DependencyGraph\DependencyGraph.csproj", "{6503E448-1F0F-4644-8A5C-85219D5AF453}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DependencyGraphTests", "DependencyGraphTests\DependencyGraphTests.csproj", "{60F2C9F8-5424-4A6D-921E-451D179DD93D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DependencyGraphTests", "DependencyGraphTests\DependencyGraphTests.csproj", "{60F2C9F8-5424-4A6D-921E-451D179DD93D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spreadsheet", "Spreadsheet\Spreadsheet.csproj", "{351DF47D-B7C5-4261-9EFE-DC4475107711}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpreadsheetTests", "SpreadsheetTests\SpreadsheetTests.csproj", "{22B74A24-9EED-4339-BC8D-D0F4300C5342}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +37,14 @@ Global
 		{60F2C9F8-5424-4A6D-921E-451D179DD93D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{60F2C9F8-5424-4A6D-921E-451D179DD93D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{60F2C9F8-5424-4A6D-921E-451D179DD93D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{351DF47D-B7C5-4261-9EFE-DC4475107711}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{351DF47D-B7C5-4261-9EFE-DC4475107711}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{351DF47D-B7C5-4261-9EFE-DC4475107711}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{351DF47D-B7C5-4261-9EFE-DC4475107711}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22B74A24-9EED-4339-BC8D-D0F4300C5342}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22B74A24-9EED-4339-BC8D-D0F4300C5342}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22B74A24-9EED-4339-BC8D-D0F4300C5342}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22B74A24-9EED-4339-BC8D-D0F4300C5342}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

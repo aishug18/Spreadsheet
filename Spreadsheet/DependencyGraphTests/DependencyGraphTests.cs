@@ -1,10 +1,12 @@
+// <author> Aishwarya Golakoti </author>
+// <date> 13 September 2024 </date>
+// For CS3500.
 namespace CS3500.DevelopmentTests;
 
 using CS3500.DependencyGraph;
 
 /// <summary>
-///     This is a test class for DependencyGraphTest and is intended
-///     to contain all DependencyGraphTest Unit Tests
+///     This is a test class for DependencyGraph and contains all DependencyGraph Unit Tests.
 /// </summary>
 [TestClass]
 public class DependencyGraphTests

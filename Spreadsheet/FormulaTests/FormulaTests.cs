@@ -2,7 +2,7 @@
 //   Copyright 2024 UofU-CS3500. All rights reserved.
 // </copyright>
 // <para>
-//      For PS4, CS3500.
+//      For CS3500.
 // </para>
 // <author> Aishwarya Golakoti </author>
 // <date> 18 September 2024 </date>

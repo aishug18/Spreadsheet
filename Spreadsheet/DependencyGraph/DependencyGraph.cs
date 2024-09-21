@@ -5,8 +5,10 @@
 // (Clarified meaning of dependent and dependee)
 // (Clarified names in solution/project structure)
 // Version 1.3 - H. James de St. Germain Fall 2024
-// Final implementation by Aishwarya Golakoti, 13 September 2024.
 
+// <author> Aishwarya Golakoti </author>
+// <date> 18 September 2024 </date>
+// For CS 3500
 namespace CS3500.DependencyGraph;
 
 /// <summary>
