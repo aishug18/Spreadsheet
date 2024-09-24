@@ -91,6 +91,10 @@ public class InvalidNameException : Exception
 /// </summary>
 public class Spreadsheet
 {
+    /// <summary>
+    ///     A Dependency Graph to keep track of relationships among cells.
+    /// </summary>
+    private DependencyGraph dg = new();
 
     /// <summary>
     ///   Provides a copy of the normalized names of all of the cells in the spreadsheet
@@ -191,6 +195,16 @@ public class Spreadsheet
     /// </returns>
     public IList<string> SetCellContents(string name, Formula formula)
     {
+        // create a new cell
+
+        // update dependency graph with new dependencies if they exist
+        HashSet<string> variables = (HashSet<string>)formula.GetVariables();
+        foreach (string variable in variables)
+        {
+            dg.AddDependency(variable, name);
+        }
+
+        return GetCellsToRecalculate(name).ToList();
         throw new NotImplementedException();
     }
 
@@ -215,7 +229,7 @@ public class Spreadsheet
     /// </returns>
     private IEnumerable<string> GetDirectDependents(string name)
     {
-        throw new NotImplementedException();
+        return dg.GetDependents(name);
     }
 
     /// <summary>
@@ -298,4 +312,20 @@ public class Spreadsheet
 
         changed.AddFirst(name);
     }
+
+    /// <summary>
+    ///     Class that represents a cell in the spreadsheet.
+    ///     MORE COMMENTS
+    /// </summary>
+    //private class Cell
+    //{
+    //    private object contents;
+
+    //    public object Contents { get; set; }
+    //    public Cell(object contents)
+    //    {
+    //        this.contents = contents;
+    //    }
+
+    //}
 }
