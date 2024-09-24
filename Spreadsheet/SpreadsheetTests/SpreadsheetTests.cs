@@ -88,10 +88,14 @@ namespace SpreadsheetTests
         public void TestSetCellContentsDouble_EmptySpreadsheet_ListWithOneItem()
         {
             Spreadsheet s = new();
-            List<string> expected = new List<string> { "A1" };
-            List<string> actual = (List<string>)s.SetCellContents("a1", 9.3);
-            Assert.AreEqual(expected, actual);
-            Assert.AreEqual(9.3, s.GetCellContents("a1"));
+            List<string> expectedList = new List<string> { "A1" };
+            List<string> actualList = (List<string>)s.SetCellContents("a1", 9.3);
+            Assert.AreEqual(expectedList, actualList);
+
+            Assert.AreEqual(9.3, s.GetCellContents("A1"));
+
+            HashSet<string> expectedSet = new HashSet<string> { "A1" };
+            Assert.IsTrue(expectedSet.SetEquals(s.GetNamesOfAllNonemptyCells()));
         }
 
         [TestMethod]
@@ -105,22 +109,35 @@ namespace SpreadsheetTests
         [TestMethod]
         public void TestSetCellContentsDouble_ValidNameNoDependents_ListWithOneItem()
         {
-            // valid name, no dependents so return a list with only the updated cell's name.
-            // updates the contents of the cell correctly (check with GetCellContents method)
+            Spreadsheet s = new();
+            s.SetCellContents("a3", 4.9);
+            s.SetCellContents("b7", "hello");
+            s.SetCellContents("c9", new Formula("64*53 + a3"));
+
+            List<string> expected = new List<string> { "B7" };
+            List<string> actual = (List<string>)s.SetCellContents("b7", 19.8);
+            Assert.AreEqual(expected, actual);
+
+            Assert.AreEqual(19.8, s.GetCellContents("b7"));
+
+            HashSet<string> expectedSet = new HashSet<string> { "A1", "B7", "C9" };
+            Assert.IsTrue(expectedSet.SetEquals(s.GetNamesOfAllNonemptyCells()));
         }
 
         [TestMethod]
-        public void TestSetCellContentsDouble_ValidNameSomeDependents_CorrectList()
+        public void TestSetCellContentsDouble_ValidNameWithDependents_CorrectList()
         {
-            // valid name, a couple dependents, returns correct list
-            // updates the contents of the cell correctly (check with GetCellContents method)
-        }
+            Spreadsheet s = new();
+            s.SetCellContents("a3", 4.9);
+            s.SetCellContents("b7", "hello");
+            s.SetCellContents("c9", new Formula("64*53 + a3"));
+            s.SetCellContents("b3", new Formula("a3/2 + c9"));
 
-        [TestMethod]
-        public void TestSetCellContentsDouble_ValidNameManyDependents_CorrectList()
-        {
-            // valid name, a lot more dependents, returns correct list
-            // updates the contents of the cell correctly (check with GetCellContents method)
+            List<string> expected = new List<string> { "A3", "C9", "B3" };
+            List<string> actual = (List<string>)s.SetCellContents("a3", 19.8);
+            Assert.AreEqual(expected, actual);
+
+            Assert.AreEqual(19.8, s.GetCellContents("a3"));
         }
 
         // ---- Tests for SetCellContents string ----
@@ -132,6 +149,7 @@ namespace SpreadsheetTests
             List<string> expected = new List<string> { "A1" };
             List<string> actual = (List<string>)s.SetCellContents("a1", "hello");
             Assert.AreEqual(expected, actual);
+
             Assert.AreEqual("hello", s.GetCellContents("a1"));
         }
 
@@ -146,22 +164,32 @@ namespace SpreadsheetTests
         [TestMethod]
         public void TestSetCellContentsString_ValidNameNoDependents_ListWithOneItem()
         {
-            // valid name, no dependents so return a list with only the updated cell's name.
-            // updates the contents of the cell correctly (check with GetCellContents method)
+            Spreadsheet s = new();
+            s.SetCellContents("a3", 4.9);
+            s.SetCellContents("b7", "hello");
+            s.SetCellContents("c9", new Formula("64*53 + a3"));
+
+            List<string> expected = new List<string> { "B7" };
+            List<string> actual = (List<string>)s.SetCellContents("b7", "tomato");
+            Assert.AreEqual(expected, actual);
+
+            Assert.AreEqual("tomato", s.GetCellContents("b7"));
         }
 
         [TestMethod]
-        public void TestSetCellContentsString_ValidNameSomeDependents_CorrectList()
+        public void TestSetCellContentsString_ValidNameWithDependents_CorrectList()
         {
-            // valid name, a couple dependents, returns correct list
-            // updates the contents of the cell correctly (check with GetCellContents method)
-        }
+            Spreadsheet s = new();
+            s.SetCellContents("a3", 4.9);
+            s.SetCellContents("b7", "hello");
+            s.SetCellContents("c9", new Formula("64*53 + a3"));
+            s.SetCellContents("b3", new Formula("a3/2 + c9"));
 
-        [TestMethod]
-        public void TestSetCellContentsString_ValidNameManyDependents_CorrectList()
-        {
-            // valid name, a lot more dependents, returns correct list
-            // updates the contents of the cell correctly (check with GetCellContents method)
+            List<string> expected = new List<string> { "A3", "C9", "B3" };
+            List<string> actual = (List<string>)s.SetCellContents("a3", "yellow");
+            Assert.AreEqual(expected, actual);
+
+            Assert.AreEqual("yellow", s.GetCellContents("a3"));
         }
 
         // ---- Tests for SetCellContents Formula ----
@@ -169,11 +197,11 @@ namespace SpreadsheetTests
         [TestMethod]
         public void TestSetCellContentsFormula_EmptySpreadsheet_ListWithOneItem()
         {
-            // empty spreadsheet, return a list with only the updated cell's name.
             Spreadsheet s = new();
             List<string> expected = new List<string> { "A1" };
             List<string> actual = (List<string>)s.SetCellContents("a1", new Formula("4+2"));
             Assert.AreEqual(expected, actual);
+
             Assert.AreEqual(new Formula("4+2"), s.GetCellContents("a1"));
         }
 
@@ -186,32 +214,48 @@ namespace SpreadsheetTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(CircularException))]
         public void TestSetCellContentsFormula_CircularDependency_ThrowException()
         {
-            // changing the contents of the cell will cause a circular dependency, so check that it does throw.
-            // check that the spreadsheet is not changed? (is it possible to check this?)
+            Spreadsheet s = new();
+            s.SetCellContents("a3", 4.9);
+            s.SetCellContents("b7", "hello");
+            s.SetCellContents("c9", new Formula("64*53 + a3"));
+            s.SetCellContents("b3", new Formula("a3/2 + c9"));
+
+            Assert.ThrowsException<CircularException>(() => { s.SetCellContents("a3", new Formula("22/2 + c9")); });
+
+            Assert.AreEqual(4.9, s.GetCellContents("A3"));
         }
 
         [TestMethod]
         public void TestSetCellContentsFormula_ValidNameNoDependents_ListWithOneItem()
         {
-            // valid name, no dependents so return a list with only the updated cell's name.
-            // updates the contents of the cell correctly (check with GetCellContents method)
+            Spreadsheet s = new();
+            s.SetCellContents("a3", 4.9);
+            s.SetCellContents("b7", "hello");
+            s.SetCellContents("c9", new Formula("64*53 + a3"));
+
+            List<string> expected = new List<string> { "C9" };
+            List<string> actual = (List<string>)s.SetCellContents("c9", new Formula("73*2 + 3"));
+            Assert.AreEqual(expected, actual);
+
+            Assert.AreEqual(new Formula("73*2 + 3"), s.GetCellContents("c9"));
         }
 
         [TestMethod]
-        public void TestSetCellContentsFormula_ValidNameSomeDependents_CorrectList()
+        public void TestSetCellContentsFormula_ValidNameWithDependents_CorrectList()
         {
-            // valid name, a couple dependents, returns correct list
-            // updates the contents of the cell correctly (check with GetCellContents method)
-        }
+            Spreadsheet s = new();
+            s.SetCellContents("a3", 4.9);
+            s.SetCellContents("b7", "hello");
+            s.SetCellContents("c9", new Formula("64*53 + a3"));
+            s.SetCellContents("b3", new Formula("a3/2 + c9"));
 
-        [TestMethod]
-        public void TestSetCellContentsFormula_ValidNameManyDependents_CorrectList()
-        {
-            // valid name, a lot more dependents, returns correct list
-            // updates the contents of the cell correctly (check with GetCellContents method)
+            List<string> expected = new List<string> { "A3", "C9", "B3" };
+            List<string> actual = (List<string>)s.SetCellContents("a3", new Formula("22/2 + 5"));
+            Assert.AreEqual(expected, actual);
+
+            Assert.AreEqual(new Formula("22/2 + 5"), s.GetCellContents("a3"));
         }
 
 
