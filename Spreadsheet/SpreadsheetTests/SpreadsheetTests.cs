@@ -50,6 +50,9 @@ namespace SpreadsheetTests
             s.GetCellContents("b8D");
         }
 
+        /// <summary>
+        ///     Tests that GetCellContents returns a string as the contents.
+        /// </summary>
         [TestMethod]
         public void TestGetCellContents_ValidName_String()
         {
@@ -60,6 +63,9 @@ namespace SpreadsheetTests
             Assert.AreEqual("hello", s.GetCellContents("b7"));
         }
 
+        /// <summary>
+        ///     Tests that GetCellContents returns a double as the contents.
+        /// </summary>
         [TestMethod]
         public void TestGetCellContents_ValidName_Double()
         {
@@ -70,6 +76,9 @@ namespace SpreadsheetTests
             Assert.AreEqual(4.9, s.GetCellContents("a3"));
         }
 
+        /// <summary>
+        ///     Tests that GetCellContents returns a Formula as the contents.
+        /// </summary>
         [TestMethod]
         public void TestGetCellContents_ValidName_Formula()
         {
@@ -82,6 +91,10 @@ namespace SpreadsheetTests
 
         // ---- Tests for SetCellContents double ----
 
+        /// <summary>
+        ///     Tests that SetCellContents sets the contents of an empty cell to a double, and the
+        ///     returned List only contains the name of the cell.
+        /// </summary>
         [TestMethod]
         public void TestSetCellContentsDouble_EmptySpreadsheet_ListWithOneItem()
         {
@@ -105,8 +118,12 @@ namespace SpreadsheetTests
             s.SetCellContents("bj8s*", 9.3);
         }
 
+        /// <summary>
+        ///     Tests that SetCellContents sets the contents of an already existing cell to a double, and the
+        ///     returned List only contains the name of the cell because it has no dependents.
+        /// </summary>
         [TestMethod]
-        public void TestSetCellContentsDouble_ValidNameNoDependents_ListWithOneItem()
+        public void TestSetCellContentsDouble_ExistingCellNoDependents_ListWithOneItem()
         {
             Spreadsheet s = new();
             s.SetCellContents("a3", 4.9);
@@ -119,12 +136,16 @@ namespace SpreadsheetTests
 
             Assert.AreEqual(19.8, s.GetCellContents("b7"));
 
-            HashSet<string> expectedSet = new HashSet<string> { "A1", "B7", "C9" };
+            HashSet<string> expectedSet = new HashSet<string> { "A3", "B7", "C9" };
             Assert.IsTrue(expectedSet.SetEquals(s.GetNamesOfAllNonemptyCells()));
         }
 
+        /// <summary>
+        ///     Tests that SetCellContents sets the contents of an already existing cell to a double, and the
+        ///     returned List contains the correct dependents of the cell.
+        /// </summary>
         [TestMethod]
-        public void TestSetCellContentsDouble_ValidNameWithDependents_CorrectList()
+        public void TestSetCellContentsDouble_ExistingCellWithDependents_CorrectList()
         {
             Spreadsheet s = new();
             s.SetCellContents("a3", 4.9);
@@ -141,6 +162,10 @@ namespace SpreadsheetTests
 
         // ---- Tests for SetCellContents string ----
 
+        /// <summary>
+        ///     Tests that SetCellContents sets the contents of an empty cell to a string, and the
+        ///     returned List only contains the name of the cell.
+        /// </summary>
         [TestMethod]
         public void TestSetCellContentsString_EmptySpreadsheet_ListWithOneItem()
         {
@@ -160,8 +185,12 @@ namespace SpreadsheetTests
             s.SetCellContents("bj8s*", "hello");
         }
 
+        /// <summary>
+        ///     Tests that SetCellContents sets the contents of an already existing cell to a string, and the
+        ///     returned List only contains the name of the cell because it has no dependents.
+        /// </summary>
         [TestMethod]
-        public void TestSetCellContentsString_ValidNameNoDependents_ListWithOneItem()
+        public void TestSetCellContentsString_ExistingCellNoDependents_ListWithOneItem()
         {
             Spreadsheet s = new();
             s.SetCellContents("a3", 4.9);
@@ -175,8 +204,12 @@ namespace SpreadsheetTests
             Assert.AreEqual("tomato", s.GetCellContents("b7"));
         }
 
+        /// <summary>
+        ///     Tests that SetCellContents sets the contents of an already existing cell to a string, and the
+        ///     returned List contains the correct dependents of the cell.
+        /// </summary>
         [TestMethod]
-        public void TestSetCellContentsString_ValidNameWithDependents_CorrectList()
+        public void TestSetCellContentsString_ExistingCellWithDependents_CorrectList()
         {
             Spreadsheet s = new();
             s.SetCellContents("a3", 4.9);
@@ -191,8 +224,35 @@ namespace SpreadsheetTests
             Assert.AreEqual("yellow", s.GetCellContents("a3"));
         }
 
+        /// <summary>
+        ///     Tests that when setting the contents of an already existing cell to an empty string, the cell
+        ///     gets deleted from the backing Dictionary and its contents are updated correctly.
+        /// </summary>
+        [TestMethod]
+        public void TestSetCellContentsString_SetToEmpty_DeletesCell()
+        {
+            Spreadsheet s = new();
+            s.SetCellContents("a3", 4.9);
+            s.SetCellContents("b7", "hello");
+            s.SetCellContents("c9", new Formula("64*53 + a3"));
+            s.SetCellContents("b3", new Formula("a3/2 + c9"));
+
+            List<string> expected = new List<string> { "A3", "C9", "B3" };
+            List<string> actual = (List<string>)s.SetCellContents("A3", "");
+            CollectionAssert.AreEqual(expected, actual);
+
+            Assert.AreEqual(string.Empty, s.GetCellContents("a3"));
+
+            HashSet<string> expectedSet = new HashSet<string> { "B7", "C9", "B3" };
+            Assert.IsTrue(expectedSet.SetEquals(s.GetNamesOfAllNonemptyCells()));
+        }
+
         // ---- Tests for SetCellContents Formula ----
 
+        /// <summary>
+        ///     Tests that SetCellContents sets the contents of an empty cell to a Formula, and the
+        ///     returned List only contains the name of the cell.
+        /// </summary>
         [TestMethod]
         public void TestSetCellContentsFormula_EmptySpreadsheet_ListWithOneItem()
         {
@@ -212,8 +272,12 @@ namespace SpreadsheetTests
             s.SetCellContents("bj8s*", new Formula("4+2"));
         }
 
+        /// <summary>
+        ///     Checks that a CircularException was thrown when changing the contents of a cell results in a
+        ///     circular dependency, and that the spreadsheet is not changed.
+        /// </summary>
         [TestMethod]
-        public void TestSetCellContentsFormula_CircularDependency_ThrowException()
+        public void TestSetCellContentsFormula_CircularDependency_ThrowExceptionNoChange()
         {
             Spreadsheet s = new();
             s.SetCellContents("a3", 4.9);
@@ -226,8 +290,12 @@ namespace SpreadsheetTests
             Assert.AreEqual(4.9, s.GetCellContents("A3"));
         }
 
+        /// <summary>
+        ///     Tests that SetCellContents sets the contents of an already existing cell to a Formula, and the
+        ///     returned List only contains the name of the cell because it has no dependents.
+        /// </summary>
         [TestMethod]
-        public void TestSetCellContentsFormula_ValidNameNoDependents_ListWithOneItem()
+        public void TestSetCellContentsFormula_ExistingCellNoDependents_ListWithOneItem()
         {
             Spreadsheet s = new();
             s.SetCellContents("a3", 4.9);
@@ -241,8 +309,12 @@ namespace SpreadsheetTests
             Assert.AreEqual(new Formula("73*2 + 3"), s.GetCellContents("c9"));
         }
 
+        /// <summary>
+        ///     Tests that SetCellContents sets the contents of an already existing cell to a Formula, and the
+        ///     returned List contains the correct dependents of the cell.
+        /// </summary>
         [TestMethod]
-        public void TestSetCellContentsFormula_ValidNameWithDependents_CorrectList()
+        public void TestSetCellContentsFormula_ExistingCellWithDependents_CorrectList()
         {
             Spreadsheet s = new();
             s.SetCellContents("a3", 4.9);
@@ -256,7 +328,6 @@ namespace SpreadsheetTests
 
             Assert.AreEqual(new Formula("22/2 + 5"), s.GetCellContents("a3"));
         }
-
 
     }
 }

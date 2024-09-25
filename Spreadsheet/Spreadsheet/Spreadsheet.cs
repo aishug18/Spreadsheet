@@ -16,6 +16,7 @@ using CS3500.Formula;
 using CS3500.DependencyGraph;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Text.RegularExpressions;
+using static System.Net.Mime.MediaTypeNames;
 
 /// <summary>
 ///   <para>
@@ -177,7 +178,7 @@ public class Spreadsheet
         if (!IsValidName(name)) // name is invalid
             throw new InvalidNameException();
 
-        if (cells.TryGetValue(name, out Cell? cell)) // if cell already exists and has a value
+        if (cells.TryGetValue(name.ToUpper(), out Cell? cell)) // if cell already exists and has a value
         {
             // TWO OPTIONS
 
@@ -214,19 +215,19 @@ public class Spreadsheet
 
         // worry about empty strings here to delete the cell
 
-        if (text == string.Empty)
+        if (text == string.Empty)   // remove the now empty cell from Dictionary
         {
-
+            cells.Remove(name.ToUpper());
         }
 
-        if (cells.TryGetValue(name, out Cell? cell)) // if cell already exists and has a value
+        else if (cells.TryGetValue(name.ToUpper(), out Cell? cell)) // if cell already exists and has a value
         {
             // TWO OPTIONS
 
             // option 1:
-            cells[name.ToUpper()] = new Cell(text);
+            //cells[name.ToUpper()] = new Cell(text);
 
-            // option 2:
+            // option 2 (preferred):
             cell.Contents = text;
         }
         else    // cell doesn't have any value
@@ -236,7 +237,6 @@ public class Spreadsheet
 
         return GetCellsToRecalculate(name.ToUpper()).ToList();
 
-        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -262,19 +262,31 @@ public class Spreadsheet
         if (!IsValidName(name)) // name is invalid
             throw new InvalidNameException();
 
-        // create a new cell
-        //Cell cell = new(name, 3.0);
+        // PROBLEM: when a CircularException occurs, the cell contents should NOT be changed, but
+        // this code IS changing the contents. HAVE TO FIX THAT!
 
-
-        // update dependency graph with new dependencies if they exist
-        HashSet<string> variables = (HashSet<string>)formula.GetVariables();
-        foreach (string variable in variables)
+        if (cells.TryGetValue(name.ToUpper(), out Cell? cell)) // if cell already exists and has a value
         {
-            dg.AddDependency(variable, name.ToUpper());
+            // TWO OPTIONS
+
+            // option 1:
+            //cells[name.ToUpper()] = new Cell(text);
+
+            // option 2 (preferred):
+            cell.Contents = formula;
+        }
+        else    // cell doesn't have any value
+        {
+            cells.Add(name.ToUpper(), new Cell(formula));
         }
 
+        // update dependency graph with new dependencies if they exist
+
+        HashSet<string> variables = (HashSet<string>)formula.GetVariables();
+        foreach (string variable in variables)
+            dg.AddDependency(variable, name.ToUpper());
+
         return GetCellsToRecalculate(name.ToUpper()).ToList();
-        throw new NotImplementedException();
     }
 
     /// <summary>
