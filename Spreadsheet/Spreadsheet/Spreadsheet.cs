@@ -14,6 +14,8 @@ namespace CS3500.Spreadsheet;
 
 using CS3500.Formula;
 using CS3500.DependencyGraph;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Text.RegularExpressions;
 
 /// <summary>
 ///   <para>
@@ -97,6 +99,12 @@ public class Spreadsheet
     private DependencyGraph dg = new();
 
     /// <summary>
+    ///     Keeps track of non-empty cells.
+    ///     Maps cell names to Cell objects.
+    /// </summary>
+    private Dictionary<string, Cell> cells = new();
+
+    /// <summary>
     ///   Provides a copy of the normalized names of all of the cells in the spreadsheet
     ///   that contain information (i.e., non-empty cells).
     /// </summary>
@@ -105,7 +113,12 @@ public class Spreadsheet
     /// </returns>
     public ISet<string> GetNamesOfAllNonemptyCells()
     {
-        throw new NotImplementedException();
+        HashSet<string> names = new();
+        foreach (var cell in cells)
+        {
+            names.Add(cell.Key);
+        }
+        return names;
     }
 
     /// <summary>
@@ -123,7 +136,13 @@ public class Spreadsheet
     /// </returns>
     public object GetCellContents(string name)
     {
-        throw new NotImplementedException();
+        if (!IsValidName(name)) // name is invalid
+            throw new InvalidNameException();
+        
+        if(cells.ContainsKey(name.ToUpper()))
+            return cells[name.ToUpper()].Contents;
+        else
+            return string.Empty;
     }
 
     /// <summary>
@@ -155,7 +174,25 @@ public class Spreadsheet
     /// </returns>
     public IList<string> SetCellContents(string name, double number)
     {
-        throw new NotImplementedException();
+        if (!IsValidName(name)) // name is invalid
+            throw new InvalidNameException();
+
+        if (cells.TryGetValue(name, out Cell? cell)) // if cell already exists and has a value
+        {
+            // TWO OPTIONS
+
+            // option 1:
+            //cells[name.ToUpper()] = new Cell(number);
+
+            // option 2 (preferred):
+            cell.Contents = number;
+        }
+        else    // cell doesn't have any value
+        {
+            cells.Add(name.ToUpper(), new Cell(number));
+        }
+
+        return GetCellsToRecalculate(name.ToUpper()).ToList();
     }
 
     /// <summary>
@@ -172,6 +209,33 @@ public class Spreadsheet
     /// </returns>
     public IList<string> SetCellContents(string name, string text)
     {
+        if (!IsValidName(name)) // name is invalid
+            throw new InvalidNameException();
+
+        // worry about empty strings here to delete the cell
+
+        if (text == string.Empty)
+        {
+
+        }
+
+        if (cells.TryGetValue(name, out Cell? cell)) // if cell already exists and has a value
+        {
+            // TWO OPTIONS
+
+            // option 1:
+            cells[name.ToUpper()] = new Cell(text);
+
+            // option 2:
+            cell.Contents = text;
+        }
+        else    // cell doesn't have any value
+        {
+            cells.Add(name.ToUpper(), new Cell(text));
+        }
+
+        return GetCellsToRecalculate(name.ToUpper()).ToList();
+
         throw new NotImplementedException();
     }
 
@@ -195,16 +259,21 @@ public class Spreadsheet
     /// </returns>
     public IList<string> SetCellContents(string name, Formula formula)
     {
+        if (!IsValidName(name)) // name is invalid
+            throw new InvalidNameException();
+
         // create a new cell
+        //Cell cell = new(name, 3.0);
+
 
         // update dependency graph with new dependencies if they exist
         HashSet<string> variables = (HashSet<string>)formula.GetVariables();
         foreach (string variable in variables)
         {
-            dg.AddDependency(variable, name);
+            dg.AddDependency(variable, name.ToUpper());
         }
 
-        return GetCellsToRecalculate(name).ToList();
+        return GetCellsToRecalculate(name.ToUpper()).ToList();
         throw new NotImplementedException();
     }
 
@@ -229,7 +298,7 @@ public class Spreadsheet
     /// </returns>
     private IEnumerable<string> GetDirectDependents(string name)
     {
-        return dg.GetDependents(name);
+        return dg.GetDependents(name.ToUpper());
     }
 
     /// <summary>
@@ -314,18 +383,41 @@ public class Spreadsheet
     }
 
     /// <summary>
-    ///     Class that represents a cell in the spreadsheet.
-    ///     MORE COMMENTS
+    ///     figure out if a name is a valid cell name.
     /// </summary>
-    //private class Cell
-    //{
-    //    private object contents;
+    /// <param name="token"></param>
+    /// <returns></returns>
+    private static bool IsValidName(string token)
+    {
+        string standaloneVarPattern = $"^{@"[a-zA-Z]+\d+"}$";
+        return Regex.IsMatch(token, standaloneVarPattern);
+    }
 
-    //    public object Contents { get; set; }
-    //    public Cell(object contents)
-    //    {
-    //        this.contents = contents;
-    //    }
+    /// <summary>
+    ///     Class that represents a cell in the spreadsheet.
+    ///     Only contains the contents for now.
+    /// </summary>
+    private class Cell
+    {
+        public object Contents {  get; set; }
 
-    //}
+        // constructor for when the contents is a double.
+        public Cell(double contents)
+        {
+            Contents = contents;
+        }
+        
+        // constructor for when the contents is a string.
+        public Cell(string contents)
+        {
+            Contents = contents;
+        }
+
+        // constructor for when the contents is a Formula.
+        public Cell(Formula contents)
+        {
+            Contents = contents;
+        }
+
+    }
 }

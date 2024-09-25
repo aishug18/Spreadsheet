@@ -63,8 +63,6 @@ namespace SpreadsheetTests
         [TestMethod]
         public void TestGetCellContents_ValidName_Double()
         {
-            // valid name, return a double
-            // valid name, return a string
             Spreadsheet s = new();
             s.SetCellContents("a3", 4.9);
             s.SetCellContents("b7", "hello");
@@ -90,7 +88,8 @@ namespace SpreadsheetTests
             Spreadsheet s = new();
             List<string> expectedList = new List<string> { "A1" };
             List<string> actualList = (List<string>)s.SetCellContents("a1", 9.3);
-            Assert.AreEqual(expectedList, actualList);
+            
+            CollectionAssert.AreEqual(expectedList, actualList);
 
             Assert.AreEqual(9.3, s.GetCellContents("A1"));
 
@@ -116,7 +115,7 @@ namespace SpreadsheetTests
 
             List<string> expected = new List<string> { "B7" };
             List<string> actual = (List<string>)s.SetCellContents("b7", 19.8);
-            Assert.AreEqual(expected, actual);
+            CollectionAssert.AreEqual(expected, actual);
 
             Assert.AreEqual(19.8, s.GetCellContents("b7"));
 
@@ -135,7 +134,7 @@ namespace SpreadsheetTests
 
             List<string> expected = new List<string> { "A3", "C9", "B3" };
             List<string> actual = (List<string>)s.SetCellContents("a3", 19.8);
-            Assert.AreEqual(expected, actual);
+            CollectionAssert.AreEqual(expected, actual);
 
             Assert.AreEqual(19.8, s.GetCellContents("a3"));
         }
@@ -148,7 +147,7 @@ namespace SpreadsheetTests
             Spreadsheet s = new();
             List<string> expected = new List<string> { "A1" };
             List<string> actual = (List<string>)s.SetCellContents("a1", "hello");
-            Assert.AreEqual(expected, actual);
+            CollectionAssert.AreEqual(expected, actual);
 
             Assert.AreEqual("hello", s.GetCellContents("a1"));
         }
@@ -171,7 +170,7 @@ namespace SpreadsheetTests
 
             List<string> expected = new List<string> { "B7" };
             List<string> actual = (List<string>)s.SetCellContents("b7", "tomato");
-            Assert.AreEqual(expected, actual);
+            CollectionAssert.AreEqual(expected, actual);
 
             Assert.AreEqual("tomato", s.GetCellContents("b7"));
         }
@@ -187,7 +186,7 @@ namespace SpreadsheetTests
 
             List<string> expected = new List<string> { "A3", "C9", "B3" };
             List<string> actual = (List<string>)s.SetCellContents("a3", "yellow");
-            Assert.AreEqual(expected, actual);
+            CollectionAssert.AreEqual(expected, actual);
 
             Assert.AreEqual("yellow", s.GetCellContents("a3"));
         }
@@ -200,7 +199,7 @@ namespace SpreadsheetTests
             Spreadsheet s = new();
             List<string> expected = new List<string> { "A1" };
             List<string> actual = (List<string>)s.SetCellContents("a1", new Formula("4+2"));
-            Assert.AreEqual(expected, actual);
+            CollectionAssert.AreEqual(expected, actual);
 
             Assert.AreEqual(new Formula("4+2"), s.GetCellContents("a1"));
         }
@@ -237,7 +236,7 @@ namespace SpreadsheetTests
 
             List<string> expected = new List<string> { "C9" };
             List<string> actual = (List<string>)s.SetCellContents("c9", new Formula("73*2 + 3"));
-            Assert.AreEqual(expected, actual);
+            CollectionAssert.AreEqual(expected, actual);
 
             Assert.AreEqual(new Formula("73*2 + 3"), s.GetCellContents("c9"));
         }
@@ -253,7 +252,7 @@ namespace SpreadsheetTests
 
             List<string> expected = new List<string> { "A3", "C9", "B3" };
             List<string> actual = (List<string>)s.SetCellContents("a3", new Formula("22/2 + 5"));
-            Assert.AreEqual(expected, actual);
+            CollectionAssert.AreEqual(expected, actual);
 
             Assert.AreEqual(new Formula("22/2 + 5"), s.GetCellContents("a3"));
         }
