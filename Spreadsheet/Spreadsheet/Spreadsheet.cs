@@ -14,9 +14,7 @@ namespace CS3500.Spreadsheet;
 
 using CS3500.Formula;
 using CS3500.DependencyGraph;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Text.RegularExpressions;
-using static System.Net.Mime.MediaTypeNames;
 
 /// <summary>
 ///   <para>
@@ -100,10 +98,9 @@ public class Spreadsheet
     private DependencyGraph dg = new();
 
     /// <summary>
-    ///     Keeps track of non-empty cells.
-    ///     Maps cell names to Cell objects.
+    ///     Keeps track of all non-empty cells. Maps cell names to Cell objects.
     /// </summary>
-    private Dictionary<string, Cell> cells = new();
+    private Dictionary<string, Cell> Cells = new();
 
     /// <summary>
     ///   Provides a copy of the normalized names of all of the cells in the spreadsheet
@@ -115,10 +112,11 @@ public class Spreadsheet
     public ISet<string> GetNamesOfAllNonemptyCells()
     {
         HashSet<string> names = new();
-        foreach (var cell in cells)
+        foreach (var cell in Cells)
         {
             names.Add(cell.Key);
         }
+
         return names;
     }
 
@@ -137,13 +135,17 @@ public class Spreadsheet
     /// </returns>
     public object GetCellContents(string name)
     {
-        if (!IsValidName(name)) // name is invalid
+        if (!IsValidName(name))
             throw new InvalidNameException();
-        
-        if(cells.ContainsKey(name.ToUpper()))
-            return cells[name.ToUpper()].Contents;
+
+        if (Cells.TryGetValue(name.ToUpper(), out Cell? cell))
+        {
+            return cell.Contents;
+        }
         else
+        {
             return string.Empty;
+        }
     }
 
     /// <summary>
@@ -175,22 +177,16 @@ public class Spreadsheet
     /// </returns>
     public IList<string> SetCellContents(string name, double number)
     {
-        if (!IsValidName(name)) // name is invalid
+        if (!IsValidName(name))
             throw new InvalidNameException();
 
-        if (cells.TryGetValue(name.ToUpper(), out Cell? cell)) // if cell already exists and has a value
+        if (Cells.TryGetValue(name.ToUpper(), out Cell? cell))
         {
-            // TWO OPTIONS
-
-            // option 1:
-            //cells[name.ToUpper()] = new Cell(number);
-
-            // option 2 (preferred):
             cell.Contents = number;
         }
-        else    // cell doesn't have any value
+        else
         {
-            cells.Add(name.ToUpper(), new Cell(number));
+            Cells.Add(name.ToUpper(), new Cell(number));
         }
 
         return GetCellsToRecalculate(name.ToUpper()).ToList();
@@ -210,33 +206,23 @@ public class Spreadsheet
     /// </returns>
     public IList<string> SetCellContents(string name, string text)
     {
-        if (!IsValidName(name)) // name is invalid
+        if (!IsValidName(name))
             throw new InvalidNameException();
-
-        // worry about empty strings here to delete the cell
 
         if (text == string.Empty)   // remove the now empty cell from Dictionary
         {
-            cells.Remove(name.ToUpper());
+            Cells.Remove(name.ToUpper());
         }
-
-        else if (cells.TryGetValue(name.ToUpper(), out Cell? cell)) // if cell already exists and has a value
+        else if (Cells.TryGetValue(name.ToUpper(), out Cell? cell))
         {
-            // TWO OPTIONS
-
-            // option 1:
-            //cells[name.ToUpper()] = new Cell(text);
-
-            // option 2 (preferred):
             cell.Contents = text;
         }
-        else    // cell doesn't have any value
+        else
         {
-            cells.Add(name.ToUpper(), new Cell(text));
+            Cells.Add(name.ToUpper(), new Cell(text));
         }
 
         return GetCellsToRecalculate(name.ToUpper()).ToList();
-
     }
 
     /// <summary>
@@ -259,34 +245,29 @@ public class Spreadsheet
     /// </returns>
     public IList<string> SetCellContents(string name, Formula formula)
     {
-        if (!IsValidName(name)) // name is invalid
+        if (!IsValidName(name))
             throw new InvalidNameException();
 
-        // PROBLEM: when a CircularException occurs, the cell contents should NOT be changed, but
-        // this code IS changing the contents. HAVE TO FIX THAT!
-
-        if (cells.TryGetValue(name.ToUpper(), out Cell? cell)) // if cell already exists and has a value
-        {
-            // TWO OPTIONS
-
-            // option 1:
-            //cells[name.ToUpper()] = new Cell(text);
-
-            // option 2 (preferred):
-            cell.Contents = formula;
-        }
-        else    // cell doesn't have any value
-        {
-            cells.Add(name.ToUpper(), new Cell(formula));
-        }
-
         // update dependency graph with new dependencies if they exist
-
         HashSet<string> variables = (HashSet<string>)formula.GetVariables();
         foreach (string variable in variables)
+        {
             dg.AddDependency(variable, name.ToUpper());
+        }
 
-        return GetCellsToRecalculate(name.ToUpper()).ToList();
+        // store result to check if a CircularException occurs
+        IList<string> result = GetCellsToRecalculate(name.ToUpper()).ToList();
+
+        if (Cells.TryGetValue(name.ToUpper(), out Cell? cell))
+        {
+            cell.Contents = formula;
+        }
+        else
+        {
+            Cells.Add(name.ToUpper(), new Cell(formula));
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -373,59 +354,74 @@ public class Spreadsheet
 
     /// <summary>
     ///   A helper for the GetCellsToRecalculate method.
-    ///   FIXME: You should fully comment what is going on below using XML tags as appropriate,
-    ///   as well as inline comments in the code.
+    ///   Gets all of the direct and indirect dependents of start and adds it to a list in the order 
+    ///   of what must be calculated first.
     /// </summary>
+    /// <param name="start"> the cell to get all of the direct and indirect dependents of</param>
+    /// <param name="name"> the current cell looked at to get the direct dependents</param>
+    /// <param name="visited"> a Set of already visited cells</param>
+    /// <param name="changed"> a List of what cells need to be recalculated in the required order</param>
+    /// <exception cref="CircularException"> thrown if a circular dependency occurs</exception>
     private void Visit(string start, string name, ISet<string> visited, LinkedList<string> changed)
     {
         visited.Add(name);
-        foreach (string n in GetDirectDependents(name))
+        foreach (string n in GetDirectDependents(name)) // get dependents of the current cell
         {
-            if (n.Equals(start))
+            if (n.Equals(start))    // a circular dependency occurs
             {
                 throw new CircularException();
             }
-            else if (!visited.Contains(n))
+            else if (!visited.Contains(n))  // haven't visited the cell yet
             {
-                Visit(start, n, visited, changed);
+                Visit(start, n, visited, changed);  // repeat process for the new cell to get the direct dependents of it
             }
         }
 
-        changed.AddFirst(name);
+        changed.AddFirst(name); // add the cell that must be recalculated
     }
 
     /// <summary>
-    ///     figure out if a name is a valid cell name.
+    ///     Helper method to determine if a name is a valid cell name, i.e., that it is a valid variable.
     /// </summary>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    private static bool IsValidName(string token)
+    /// <param name="name"> the name of the cell to check if it is valid</param>
+    /// <returns> true if name is a valid cell name </returns>
+    private static bool IsValidName(string name)
     {
         string standaloneVarPattern = $"^{@"[a-zA-Z]+\d+"}$";
-        return Regex.IsMatch(token, standaloneVarPattern);
+        return Regex.IsMatch(name, standaloneVarPattern);
     }
 
     /// <summary>
     ///     Class that represents a cell in the spreadsheet.
     ///     Only contains the contents for now.
+    ///     Contents is of type double, string, or Formula.
     /// </summary>
     private class Cell
     {
         public object Contents {  get; set; }
 
-        // constructor for when the contents is a double.
+        /// <summary>
+        ///     Constructs a cell when the contents is a double.
+        /// </summary>
+        /// <param name="contents"></param>
         public Cell(double contents)
         {
             Contents = contents;
         }
         
-        // constructor for when the contents is a string.
+        /// <summary>
+        ///     Constructs a cell when the contents is a string.
+        /// </summary>
+        /// <param name="contents"></param>
         public Cell(string contents)
         {
             Contents = contents;
         }
 
-        // constructor for when the contents is a Formula.
+        /// <summary>
+        ///     Constructs a cell when the contents is a Formula.
+        /// </summary>
+        /// <param name="contents"></param>
         public Cell(Formula contents)
         {
             Contents = contents;
