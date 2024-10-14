@@ -15,6 +15,7 @@ namespace CS3500.Spreadsheet;
 using CS3500.Formula;
 using CS3500.DependencyGraph;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 /// <summary>
 ///   <para>
@@ -149,6 +150,22 @@ public class Spreadsheet
     }
 
     /// <summary>
+    ///     Removes dependencies from the dependency graph given a cell name and a Formula.
+    /// </summary>
+    /// <param name="name"> name of the cell </param>
+    /// <param name="formula">
+    ///     previous contents of the cell used to find the variables and remove dependencies
+    /// </param>
+    private void RemoveDependencies(string name, Formula formula)
+    {
+        HashSet<string> variables = (HashSet<string>)formula.GetVariables();
+        foreach (string variable in variables)
+        {
+            dg.RemoveDependency(variable, name.ToUpper());
+        }
+    }
+
+    /// <summary>
     ///  Set the contents of the named cell to the given number.
     /// </summary>
     ///
@@ -182,6 +199,12 @@ public class Spreadsheet
 
         if (Cells.TryGetValue(name.ToUpper(), out Cell? cell))
         {
+            // remove old dependencies if required
+            if(cell.Contents is Formula)
+            {
+                RemoveDependencies(name, (Formula)cell.Contents);
+            }
+
             cell.Contents = number;
         }
         else
@@ -211,10 +234,22 @@ public class Spreadsheet
 
         if (text == string.Empty)   // remove the now empty cell from Dictionary
         {
+            if (Cells.TryGetValue(name.ToUpper(), out Cell? cell) && cell.Contents is Formula)
+            {
+                RemoveDependencies(name, (Formula)cell.Contents);
+            }
+
             Cells.Remove(name.ToUpper());
+
         }
         else if (Cells.TryGetValue(name.ToUpper(), out Cell? cell))
         {
+            // remove old dependencies if required
+            if (cell.Contents is Formula)
+            {
+                RemoveDependencies(name, (Formula)cell.Contents);
+            }
+
             cell.Contents = text;
         }
         else
@@ -260,6 +295,11 @@ public class Spreadsheet
 
         if (Cells.TryGetValue(name.ToUpper(), out Cell? cell))
         {
+            // remove old dependencies if required
+            if (cell.Contents is Formula)
+            {
+                RemoveDependencies(name, (Formula)cell.Contents);
+            }
             cell.Contents = formula;
         }
         else
