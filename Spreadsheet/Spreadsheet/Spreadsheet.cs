@@ -15,6 +15,7 @@ namespace CS3500.Spreadsheet;
 using CS3500.Formula;
 using CS3500.DependencyGraph;
 using System.Text.RegularExpressions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 /// <summary>
 ///   <para>
@@ -48,8 +49,7 @@ public class SpreadsheetReadWriteException : Exception
     /// </para>
     /// </summary>
     /// <param name="msg"> An informative message to the user. </param>
-    public SpreadsheetReadWriteException(string msg)
-    : base(msg)
+    public SpreadsheetReadWriteException(string msg) : base(msg)
     {
     }
 }
@@ -115,30 +115,13 @@ public class Spreadsheet
     /// <summary>
     ///     A Dependency Graph to keep track of relationships among cells.
     /// </summary>
-    private DependencyGraph dg = new();
+    private DependencyGraph dg;
 
     /// <summary>
     ///     Keeps track of all non-empty cells. Maps cell names to Cell objects.
     /// </summary>
-    private Dictionary<string, Cell> Cells = new();
+    private Dictionary<string, Cell> Cells;
 
-
-    /// <summary>
-    /// <para>
-    ///     Return the value of the named cell, as defined by <see cref="GetCellValue(string)"/>.
-    /// </para>
-    /// </summary>
-    /// <param name="name"> The cell in question. </param>
-    /// <returns>
-    ///     <see cref="GetCellValue(string)"/>
-    /// </returns>
-    /// <exception cref="InvalidNameException">
-    ///     If the provided name is invalid, throws an InvalidNameException.
-    /// </exception>
-    public object this[string name]
-    {
-        get { throw new NotImplementedException(); }
-    }
     /// <summary>
     ///     True if this spreadsheet has been changed since it was
     ///     created or saved (whichever happened most recently),
@@ -147,11 +130,12 @@ public class Spreadsheet
     public bool Changed { get; private set; }
 
     /// <summary>
-    ///     Default constructor
+    ///     Constructs an empty spreadsheet.
     /// </summary>
     public Spreadsheet()
     {
-        throw new NotImplementedException();
+        dg = new();
+        Cells = new();
     }
 
     /// <summary>
@@ -165,6 +149,22 @@ public class Spreadsheet
     /// <param name="filename">The path to the file containing the spreadsheet to load</param>
     public Spreadsheet(string filename)
     {
+        dg = new();
+        Cells = new();
+
+        try
+        {
+            using (StreamReader obj = new(filename) )
+            {
+
+            }
+        }
+        catch(Exception e)
+        {
+            throw new SpreadsheetReadWriteException(e.Message);
+        }
+        
+        
         throw new NotImplementedException();
     }
 
@@ -231,7 +231,26 @@ public class Spreadsheet
     /// </exception>
     public void Save(string filename)
     {
+
+        Changed = false;
         throw new NotImplementedException();
+    }
+
+    /// <summary>
+    /// <para>
+    ///     Return the value of the named cell, as defined by <see cref="GetCellValue(string)"/>.
+    /// </para>
+    /// </summary>
+    /// <param name="name"> The cell in question. </param>
+    /// <returns>
+    ///     <see cref="GetCellValue(string)"/>
+    /// </returns>
+    /// <exception cref="InvalidNameException">
+    ///     If the provided name is invalid, throws an InvalidNameException.
+    /// </exception>
+    public object this[string name]
+    {
+        get { return GetCellValue(name); }
     }
 
     /// <summary>
@@ -295,7 +314,17 @@ public class Spreadsheet
     /// </exception>
     public object GetCellValue(string name)
     {
-        throw new NotImplementedException();
+        if (!IsValidName(name))
+            throw new InvalidNameException();
+
+        if (Cells.TryGetValue(name.ToUpper(), out Cell? cell))
+        {
+            return cell.Value;
+        }
+        else
+        {
+            return string.Empty;
+        }
     }
 
     /// <summary>
@@ -362,7 +391,24 @@ public class Spreadsheet
     /// </exception>
     public IList<string> SetContentsOfCell(string name, string content)
     {
-        throw new NotImplementedException();
+        if (!IsValidName(name))
+            throw new InvalidNameException();
+
+        // if contents is a double
+        if (double.TryParse(content, out double number))
+        {
+            return SetCellContents(name, number);
+        }
+        // if contents is a formula
+        else if (content.StartsWith('='))
+        {
+            return SetCellContents(name, new Formula(content.Substring(1)));
+        }
+        // if contents is a string
+        else
+        {
+            return SetCellContents(name, content);
+        }
     }
 
     /// <summary>
@@ -394,9 +440,6 @@ public class Spreadsheet
     /// </returns>
     private IList<string> SetCellContents(string name, double number)
     {
-        if (!IsValidName(name))
-            throw new InvalidNameException();
-
         if (Cells.TryGetValue(name.ToUpper(), out Cell? cell))
         {
             // remove old dependencies if required
@@ -406,6 +449,8 @@ public class Spreadsheet
             }
 
             cell.Contents = number;
+            cell.Value = number;
+            cell.StringForm = number.ToString();
         }
         else
         {
@@ -429,9 +474,6 @@ public class Spreadsheet
     /// </returns>
     private IList<string> SetCellContents(string name, string text)
     {
-        if (!IsValidName(name))
-            throw new InvalidNameException();
-
         if (text == string.Empty)   // remove the now empty cell from Dictionary
         {
             if (Cells.TryGetValue(name.ToUpper(), out Cell? cell) && cell.Contents is Formula)
@@ -451,6 +493,8 @@ public class Spreadsheet
             }
 
             cell.Contents = text;
+            cell.Value = text;
+            cell.StringForm = text;
         }
         else
         {
@@ -480,9 +524,6 @@ public class Spreadsheet
     /// </returns>
     private IList<string> SetCellContents(string name, Formula formula)
     {
-        if (!IsValidName(name))
-            throw new InvalidNameException();
-
         // update dependency graph with new dependencies if they exist
         HashSet<string> variables = (HashSet<string>)formula.GetVariables();
         foreach (string variable in variables)
@@ -501,10 +542,14 @@ public class Spreadsheet
                 RemoveDependencies(name, (Formula)cell.Contents);
             }
             cell.Contents = formula;
+            // CALCULATE THE VALUE OF THE FORMULA USING EVALUATE BY CREATING YOUR OWN LOOKUP METHOD
+            cell.Value = 0; // FIX ME
+            cell.StringForm = "=" + formula.ToString();
         }
         else
         {
             Cells.Add(name.ToUpper(), new Cell(formula));
+            // PROB HAVE TO CALCULATE THE VALUE HERE TOO
         }
 
         return result;
@@ -649,12 +694,26 @@ public class Spreadsheet
 
     /// <summary>
     ///     Class that represents a cell in the spreadsheet.
-    ///     Only contains the contents for now.
-    ///     Contents is of type double, string, or Formula.
+    ///     Stores the contents, which is of type double, string, or Formula,
+    ///     the value, which is of type double, string, or FormulaError, and
+    ///     the StringForm, which is the string form of the contents of the cell.
     /// </summary>
     private class Cell
     {
+        /// <summary>
+        ///     Stores the contents of the cell, either a double, a string, or a Formula
+        /// </summary>
         public object Contents {  get; set; }
+
+        /// <summary>
+        ///     Stores the value of the cell, either a double, a string, or a FormulaError
+        /// </summary>
+        public object Value { get; set; }
+
+        /// <summary>
+        ///     Stores the StringForm of a cell, either a string, or ("=" + formula.ToString()).
+        /// </summary>
+        public object StringForm { get; set; }
 
         /// <summary>
         ///     Constructs a cell when the contents is a double.
@@ -663,6 +722,8 @@ public class Spreadsheet
         public Cell(double contents)
         {
             Contents = contents;
+            Value = contents;
+            StringForm = contents.ToString();
         }
         
         /// <summary>
@@ -672,6 +733,8 @@ public class Spreadsheet
         public Cell(string contents)
         {
             Contents = contents;
+            Value = contents;
+            StringForm = contents;
         }
 
         /// <summary>
@@ -681,6 +744,9 @@ public class Spreadsheet
         public Cell(Formula contents)
         {
             Contents = contents;
+            Value = "sum FIXME";
+            // maybe actually evaluate it... so it's either a double or a FormulaError
+            StringForm = "=" + contents.ToString();
         }
 
     }
