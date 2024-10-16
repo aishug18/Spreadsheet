@@ -17,20 +17,44 @@ namespace SpreadsheetTests
         [TestMethod]
         public void TestDefaultConstructor_EmptySpreadsheet()
         {
-            // create a spreadsheet using the default constructor and ensure the spreadsheet is empty
+            Spreadsheet s = new();
+            HashSet<string> expected = new();
+            Assert.IsTrue(expected.SetEquals(s.GetNamesOfAllNonemptyCells()));
         }
 
         [TestMethod]
         public void TestConstructorWithFile_NoErrors_Successful()
         {
             // create a spreadsheet using the file constructor with no errors
+            Spreadsheet s = new("file.txt");
         }
 
         [TestMethod]
         [ExpectedException(typeof(SpreadsheetReadWriteException))]
-        public void TestConstructorWithFile_Errors_Exception()
+        public void TestConstructorWithFile_FilenameError_Exception()
         {
-            // create a spreadsheet using the file constructor with errors, expect exception
+            // create a spreadsheet using the file constructor with error in filename, expect exception
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(SpreadsheetReadWriteException))]
+        public void TestConstructorWithFile_InvalidCellNameError_Exception()
+        {
+            // create a spreadsheet using the file constructor with invalid cell names, expect exception
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(SpreadsheetReadWriteException))]
+        public void TestConstructorWithFile_InvalidFormulaError_Exception()
+        {
+            // create a spreadsheet using the file constructor with invalid formula, expect exception
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(SpreadsheetReadWriteException))]
+        public void TestConstructorWithFile_CircularDependencyError_Exception()
+        {
+            // create a spreadsheet using the file constructor with a circular dependency, expect exception
         }
 
         // ---- Tests for Save ----
@@ -41,28 +65,80 @@ namespace SpreadsheetTests
             // create a spreadsheet with stuff in it, save, no exception, check that it correctly uploaded things
             // maybe by recreating it using the file in constructor and comparing the 2 resulting spreadsheets
             // check that Changed is false.
+            Spreadsheet s = new("file.txt");
         }
 
+        /// <summary>
+        ///     Checks that when saving to an already existing file, the contents of that file are overwritten.
+        /// </summary>
+        [TestMethod]
+        public void TestSave_ExistingFile_OverwriteFile()
+        {
+            // create a spreadsheet with stuff in it, save to already existing file with a spreadsheet already
+            // uploaded in it, no exception, check that it correctly uploaded things
+            // maybe by recreating it using the file in constructor and comparing the 2 resulting spreadsheets
+            // check that Changed is false.
+            // check that file is overwritten by asserting false statements to ensure that the previous and the 
+            // current spreadsheet are different.
+            Spreadsheet s = new("file.txt");
+        }
+
+        /// <summary>
+        ///     Checks that when saving to a file that has an invalid name, an exception is thrown.
+        /// </summary>
         [TestMethod]
         [ExpectedException (typeof(SpreadsheetReadWriteException))]
-        public void TestSave_Errors_Exception()
+        public void TestSave_Error_Exception()
         {
-            // create a spreadsheet with stuff in it, save, some errors occured, so exception.
+            // create a spreadsheet with stuff in it, save with invalid filename, so exception.
+            // check that Changed property is not affected??
         }
 
         // ---- Tests for indexer ----
 
         [TestMethod]
-        public void TestIndexer_CorrectlyReturns()
+        public void TestIndexer_EmptySpreadsheet_EmptyString()
         {
-
+            Spreadsheet s = new();
+            Assert.AreEqual(string.Empty, s["a7"]);
         }
 
         [TestMethod]
         [ExpectedException(typeof(InvalidNameException))]
-        public void TestIndexer_InvalidName_Exception()
+        public void TestIndexer_InvalidName_ThrowException()
         {
+            Spreadsheet s = new();
+            _ = s["b8d"];
+        }
 
+        [TestMethod]
+        public void TestIndexer_ValidName_String()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("a3", "4.9");
+            s.SetContentsOfCell("b7", "hello");
+            s.SetContentsOfCell("c9", "=64*53 + a3");
+            Assert.AreEqual("hello", s["b7"]);
+        }
+
+        [TestMethod]
+        public void TestIndexer_ValidName_Double()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("a3", "4.9");
+            s.SetContentsOfCell("b7", "hello");
+            s.SetContentsOfCell("c9", "=64*53 + a3");
+            Assert.AreEqual(4.9, s["a3"]);
+        }
+
+        [TestMethod]
+        public void TestIndexer_ValidName_Formula()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("a3", "4.9");
+            s.SetContentsOfCell("b7", "hello");
+            s.SetContentsOfCell("c9", "=64*53 + a3");
+            Assert.AreEqual(3396.9, s["c9"]);
         }
 
         // ---- Tests for GetNamesOfAllNonemptyCells ----
@@ -358,7 +434,7 @@ namespace SpreadsheetTests
             CollectionAssert.AreEqual(expected, actual);
 
             Assert.AreEqual(new Formula("4+2"), s.GetCellContents("a1"));
-            Assert.AreEqual(6, s.GetCellValue("a1"));
+            Assert.AreEqual(6.0, s.GetCellValue("a1"));
         }
 
         /// <summary>
@@ -397,7 +473,7 @@ namespace SpreadsheetTests
             CollectionAssert.AreEqual(expected, actual);
 
             Assert.AreEqual(new Formula("73*2 + 3"), s.GetCellContents("c9"));
-            Assert.AreEqual(149, s.GetCellValue("c9"));
+            Assert.AreEqual(149.0, s.GetCellValue("c9"));
         }
 
         /// <summary>
@@ -421,9 +497,89 @@ namespace SpreadsheetTests
             Assert.IsInstanceOfType<FormulaError>(s.GetCellValue("a3"));
         }
 
-        // ---- Tests that check breaks in dependencies ----
+        // ---- Additional Tests ----
 
+        /// <summary>
+        ///     Checks that when changing the contents of a cell from a formula with variables to a
+        ///     double, the dependencies are correctly removed from the backing DependencyGraph.
+        /// </summary>
+        [TestMethod]
+        public void TestSetContentsOfCell_FormulaToNumber_CorrectList()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("a3", "4.9");
+            s.SetContentsOfCell("b7", "=a3 + 27");
+            s.SetContentsOfCell("c9", "=64*53 + b7");
+            s.SetContentsOfCell("b3", "=c9-60 + b7");
 
+            CollectionAssert.AreEqual(new List<string> { "B7", "C9", "B3" }, (List<string>)s.SetContentsOfCell("b7", "2"));
+
+            s.SetContentsOfCell("b7", "=a3 + 27");   // reset the spreadsheet
+
+            List<string> expected = new List<string> { "C9", "B3" };
+            List<string> actual = (List<string>)s.SetContentsOfCell("c9", "89");
+            CollectionAssert.AreEqual(expected, actual);
+
+            Assert.AreEqual(89.0, s.GetCellContents("c9"));
+            Assert.AreEqual(89.0, s.GetCellValue("c9"));
+
+            CollectionAssert.AreEqual(new List<string> { "B7", "B3" }, (List<string>)s.SetContentsOfCell("b7", "30"));
+        }
+
+        /// <summary>
+        ///     Checks that when changing the contents of a cell from a formula with variables to an
+        ///     empty string (essentially deleting the cell), the dependencies are correctly removed 
+        ///     from the backing DependencyGraph.
+        /// </summary>
+        [TestMethod]
+        public void TestSetContentsOfCell_FormulaToEmptyString_CorrectList()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("a3", "4.9");
+            s.SetContentsOfCell("b7", "=a3 + 27");
+            s.SetContentsOfCell("c9", "=64*53 + b7");
+            s.SetContentsOfCell("b3", "=c9-60 + b7");
+
+            CollectionAssert.AreEqual(new List<string> { "B7", "C9", "B3" }, (List<string>)s.SetContentsOfCell("b7", "2"));
+
+            s.SetContentsOfCell("b7", "=a3 + 27");   // reset the spreadsheet
+
+            List<string> expected = new List<string> { "C9", "B3" };
+            List<string> actual = (List<string>)s.SetContentsOfCell("c9", string.Empty);
+            CollectionAssert.AreEqual(expected, actual);
+
+            Assert.AreEqual(string.Empty, s.GetCellContents("c9"));
+            Assert.AreEqual(string.Empty, s.GetCellValue("c9"));
+
+            CollectionAssert.AreEqual(new List<string> { "B7", "B3" }, (List<string>)s.SetContentsOfCell("b7", "30"));
+        }
+
+        /// <summary>
+        ///     Checks that when changing the contents of a cell from a formula with variables to a
+        ///     string, the dependencies are correctly removed from the backing DependencyGraph.
+        /// </summary>
+        [TestMethod]
+        public void TestSetContentsOfCell_FormulaToString_CorrectList()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("a3", "4.9");
+            s.SetContentsOfCell("b7", "=a3 + 27");
+            s.SetContentsOfCell("c9", "=64*53 + b7");
+            s.SetContentsOfCell("b3", "=c9-60 + b7");
+
+            CollectionAssert.AreEqual(new List<string> { "B7", "C9", "B3" }, (List<string>)s.SetContentsOfCell("b7", "2"));
+
+            s.SetContentsOfCell("b7", "=a3 + 27");   // reset the spreadsheet
+
+            List<string> expected = new List<string> { "C9", "B3" };
+            List<string> actual = (List<string>)s.SetContentsOfCell("c9", "hello");
+            CollectionAssert.AreEqual(expected, actual);
+
+            Assert.AreEqual("hello", s.GetCellContents("c9"));
+            Assert.AreEqual("hello", s.GetCellValue("c9"));
+
+            CollectionAssert.AreEqual(new List<string> { "B7", "B3" }, (List<string>)s.SetContentsOfCell("b7", "nevermore"));
+        }
 
     }
 }

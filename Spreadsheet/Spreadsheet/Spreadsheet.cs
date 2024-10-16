@@ -393,22 +393,29 @@ public class Spreadsheet
     {
         if (!IsValidName(name))
             throw new InvalidNameException();
+        
+        Changed = true;
+        IList<string> list;
 
         // if contents is a double
         if (double.TryParse(content, out double number))
         {
-            return SetCellContents(name, number);
+            list = SetCellContents(name.ToUpper(), number);
         }
         // if contents is a formula
         else if (content.StartsWith('='))
         {
-            return SetCellContents(name, new Formula(content.Substring(1)));
+            list = SetCellContents(name.ToUpper(), new Formula(content.Substring(1)));
         }
         // if contents is a string
         else
         {
-            return SetCellContents(name, content);
+            list = SetCellContents(name.ToUpper(), content);
         }
+
+        Recalculate(list);
+
+        return list;
     }
 
     /// <summary>
@@ -440,7 +447,7 @@ public class Spreadsheet
     /// </returns>
     private IList<string> SetCellContents(string name, double number)
     {
-        if (Cells.TryGetValue(name.ToUpper(), out Cell? cell))
+        if (Cells.TryGetValue(name, out Cell? cell))
         {
             // remove old dependencies if required
             if(cell.Contents is Formula)
@@ -454,10 +461,10 @@ public class Spreadsheet
         }
         else
         {
-            Cells.Add(name.ToUpper(), new Cell(number));
+            Cells.Add(name, new Cell(number));
         }
 
-        return GetCellsToRecalculate(name.ToUpper()).ToList();
+        return GetCellsToRecalculate(name).ToList();
     }
 
     /// <summary>
@@ -476,15 +483,15 @@ public class Spreadsheet
     {
         if (text == string.Empty)   // remove the now empty cell from Dictionary
         {
-            if (Cells.TryGetValue(name.ToUpper(), out Cell? cell) && cell.Contents is Formula)
+            if (Cells.TryGetValue(name, out Cell? cell) && cell.Contents is Formula)
             {
                 RemoveDependencies(name, (Formula)cell.Contents);
             }
 
-            Cells.Remove(name.ToUpper());
+            Cells.Remove(name);
 
         }
-        else if (Cells.TryGetValue(name.ToUpper(), out Cell? cell))
+        else if (Cells.TryGetValue(name, out Cell? cell))
         {
             // remove old dependencies if required
             if (cell.Contents is Formula)
@@ -498,10 +505,10 @@ public class Spreadsheet
         }
         else
         {
-            Cells.Add(name.ToUpper(), new Cell(text));
+            Cells.Add(name, new Cell(text));
         }
 
-        return GetCellsToRecalculate(name.ToUpper()).ToList();
+        return GetCellsToRecalculate(name).ToList();
     }
 
     /// <summary>
@@ -528,13 +535,13 @@ public class Spreadsheet
         HashSet<string> variables = (HashSet<string>)formula.GetVariables();
         foreach (string variable in variables)
         {
-            dg.AddDependency(variable, name.ToUpper());
+            dg.AddDependency(variable, name);
         }
 
         // store result to check if a CircularException occurs
-        IList<string> result = GetCellsToRecalculate(name.ToUpper()).ToList();
+        IList<string> result = GetCellsToRecalculate(name).ToList();
 
-        if (Cells.TryGetValue(name.ToUpper(), out Cell? cell))
+        if (Cells.TryGetValue(name, out Cell? cell))
         {
             // remove old dependencies if required
             if (cell.Contents is Formula)
@@ -542,17 +549,37 @@ public class Spreadsheet
                 RemoveDependencies(name, (Formula)cell.Contents);
             }
             cell.Contents = formula;
-            // CALCULATE THE VALUE OF THE FORMULA USING EVALUATE BY CREATING YOUR OWN LOOKUP METHOD
-            cell.Value = 0; // FIX ME
             cell.StringForm = "=" + formula.ToString();
         }
         else
         {
-            Cells.Add(name.ToUpper(), new Cell(formula));
-            // PROB HAVE TO CALCULATE THE VALUE HERE TOO
+            Cells.Add(name, new Cell(formula));
         }
 
         return result;
+    }
+
+    private double Lookup(string variable)
+    {
+        if(Cells.TryGetValue(variable, out Cell? cell) && (cell.Value is double value))
+        {
+            return value;
+        }
+        else    // cell doesn't exist or the value is a string or a FormulaError
+        {
+            throw new ArgumentException();
+        }
+    }
+
+    private void Recalculate(IList<string> list)
+    {
+        for(int i = 0; i < list.Count; i++)
+        {
+            if (Cells.TryGetValue(list[i], out Cell? cell) && (cell.Contents is Formula f))
+            {
+                cell.Value = f.Evaluate(Lookup);
+            }
+        }
     }
 
     /// <summary>
@@ -567,7 +594,7 @@ public class Spreadsheet
         HashSet<string> variables = (HashSet<string>)formula.GetVariables();
         foreach (string variable in variables)
         {
-            dg.RemoveDependency(variable, name.ToUpper());
+            dg.RemoveDependency(variable, name);
         }
     }
 
@@ -744,8 +771,7 @@ public class Spreadsheet
         public Cell(Formula contents)
         {
             Contents = contents;
-            Value = "sum FIXME";
-            // maybe actually evaluate it... so it's either a double or a FormulaError
+            Value = new FormulaError("");
             StringForm = "=" + contents.ToString();
         }
 
