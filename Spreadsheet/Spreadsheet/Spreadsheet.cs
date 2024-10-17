@@ -136,6 +136,7 @@ public class Spreadsheet
     {
         dg = new();
         Cells = new();
+        Changed = false;
     }
 
     /// <summary>
@@ -151,6 +152,7 @@ public class Spreadsheet
     {
         dg = new();
         Cells = new();
+        
 
         try
         {
@@ -163,8 +165,9 @@ public class Spreadsheet
         {
             throw new SpreadsheetReadWriteException(e.Message);
         }
-        
-        
+
+        Changed = false;
+
         throw new NotImplementedException();
     }
 
@@ -394,7 +397,6 @@ public class Spreadsheet
         if (!IsValidName(name))
             throw new InvalidNameException();
         
-        Changed = true;
         IList<string> list;
 
         // if contents is a double
@@ -414,6 +416,7 @@ public class Spreadsheet
         }
 
         Recalculate(list);
+        Changed = true;
 
         return list;
     }

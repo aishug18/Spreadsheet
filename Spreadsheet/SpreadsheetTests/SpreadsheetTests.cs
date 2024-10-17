@@ -20,6 +20,7 @@ namespace SpreadsheetTests
             Spreadsheet s = new();
             HashSet<string> expected = new();
             Assert.IsTrue(expected.SetEquals(s.GetNamesOfAllNonemptyCells()));
+            Assert.IsFalse(s.Changed);
         }
 
         [TestMethod]
@@ -27,6 +28,7 @@ namespace SpreadsheetTests
         {
             // create a spreadsheet using the file constructor with no errors
             Spreadsheet s = new("file.txt");
+            Assert.IsFalse(s.Changed);
         }
 
         [TestMethod]
@@ -66,6 +68,10 @@ namespace SpreadsheetTests
             // maybe by recreating it using the file in constructor and comparing the 2 resulting spreadsheets
             // check that Changed is false.
             Spreadsheet s = new("file.txt");
+            // add stuff blah blah blah
+            Assert.IsTrue(s.Changed);
+            // save file
+            Assert.IsFalse(s.Changed);
         }
 
         /// <summary>
@@ -81,6 +87,10 @@ namespace SpreadsheetTests
             // check that file is overwritten by asserting false statements to ensure that the previous and the 
             // current spreadsheet are different.
             Spreadsheet s = new("file.txt");
+            // add stuff blah blah blah
+            Assert.IsTrue(s.Changed);
+            // save file
+            Assert.IsFalse(s.Changed);
         }
 
         /// <summary>
@@ -91,7 +101,12 @@ namespace SpreadsheetTests
         public void TestSave_Error_Exception()
         {
             // create a spreadsheet with stuff in it, save with invalid filename, so exception.
-            // check that Changed property is not affected??
+            // check that Changed property is not affected
+            Spreadsheet s = new();
+            // add stuff blah blah blah
+            Assert.IsTrue(s.Changed);
+            // save file but error
+            Assert.IsTrue(s.Changed);
         }
 
         // ---- Tests for indexer ----
@@ -299,8 +314,8 @@ namespace SpreadsheetTests
             Spreadsheet s = new();
             List<string> expectedList = new List<string> { "A1" };
             List<string> actualList = (List<string>)s.SetContentsOfCell("a1", "9.3");
-            
             CollectionAssert.AreEqual(expectedList, actualList);
+            Assert.IsTrue(s.Changed);
 
             Assert.AreEqual(9.3, s.GetCellContents("A1"));
             Assert.AreEqual(9.3, s.GetCellValue("A1"));
@@ -310,11 +325,11 @@ namespace SpreadsheetTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(InvalidNameException))]
         public void TestSetContentsOfCell_InvalidName_ThrowException()
         {
             Spreadsheet s = new();
-            s.SetContentsOfCell("bj8s*", "9.3");
+            Assert.ThrowsException<InvalidNameException>(() => { s.SetContentsOfCell("bj8s*", "9.3"); });
+            Assert.IsFalse(s.Changed);
         }
 
         /// <summary>
@@ -332,6 +347,7 @@ namespace SpreadsheetTests
             List<string> expected = new List<string> { "B7" };
             List<string> actual = (List<string>)s.SetContentsOfCell("b7", "19.3");
             CollectionAssert.AreEqual(expected, actual);
+            Assert.IsTrue(s.Changed);
 
             Assert.AreEqual(19.3, s.GetCellContents("b7"));
             Assert.AreEqual(19.3, s.GetCellValue("b7"));
@@ -342,7 +358,7 @@ namespace SpreadsheetTests
 
         /// <summary>
         ///     Tests that SetContentsOfCell sets the contents of an already existing cell with 
-        ///     dependents to a double.
+        ///     dependents to a double. Also checks that the Changed property is updated appropriately.
         /// </summary>
         [TestMethod]
         public void TestSetContentsOfCell_ExistingCellWithDependentsDouble_CorrectlyUpdated()
@@ -356,9 +372,14 @@ namespace SpreadsheetTests
             List<string> expected = new List<string> { "A3", "C9", "B3" };
             List<string> actual = (List<string>)s.SetContentsOfCell("a3", "19.8");
             CollectionAssert.AreEqual(expected, actual);
+            Assert.IsTrue(s.Changed);
 
             Assert.AreEqual(19.8, s.GetCellContents("a3"));
             Assert.AreEqual(19.8, s.GetCellValue("a3"));
+
+            // SAVE SOMETHING
+            s.Save("file.txt");
+            Assert.IsFalse(s.Changed);
         }
 
         /// <summary>
@@ -413,6 +434,7 @@ namespace SpreadsheetTests
             List<string> expected = new List<string> { "A3", "C9", "B3" };
             List<string> actual = (List<string>)s.SetContentsOfCell("A3", "");
             CollectionAssert.AreEqual(expected, actual);
+            Assert.IsTrue(s.Changed);
 
             Assert.AreEqual(string.Empty, s.GetCellContents("a3"));
             Assert.AreEqual(string.Empty, s.GetCellContents("a3"));
@@ -449,8 +471,10 @@ namespace SpreadsheetTests
             s.SetContentsOfCell("b7", "hello");
             s.SetContentsOfCell("c9", "=64*53 + a3");
             s.SetContentsOfCell("b3", "=a3/2 + c9");
+            s.Save("file.txt"); // FIX FILE STUFF HERE
 
             Assert.ThrowsException<CircularException>(() => { s.SetContentsOfCell("a3", "=22/2 + c9"); });
+            Assert.IsFalse(s.Changed);
 
             Assert.AreEqual(4.9, s.GetCellContents("A3"));
             Assert.AreEqual(4.9, s.GetCellValue("A3"));
@@ -492,6 +516,7 @@ namespace SpreadsheetTests
             List<string> expected = new List<string> { "A3", "C9", "B3" };
             List<string> actual = (List<string>)s.SetContentsOfCell("a3", "=22/2 + B7");
             CollectionAssert.AreEqual(expected, actual);
+            Assert.IsTrue(s.Changed);
 
             Assert.AreEqual(new Formula("22/2 + B7"), s.GetCellContents("a3"));
             Assert.IsInstanceOfType<FormulaError>(s.GetCellValue("a3"));
@@ -522,8 +547,10 @@ namespace SpreadsheetTests
 
             Assert.AreEqual(89.0, s.GetCellContents("c9"));
             Assert.AreEqual(89.0, s.GetCellValue("c9"));
+            Assert.AreEqual(60.9, s.GetCellValue("b3"));
 
             CollectionAssert.AreEqual(new List<string> { "B7", "B3" }, (List<string>)s.SetContentsOfCell("b7", "30"));
+            Assert.AreEqual(59.0, s.GetCellValue("b3"));
         }
 
         /// <summary>
@@ -550,8 +577,10 @@ namespace SpreadsheetTests
 
             Assert.AreEqual(string.Empty, s.GetCellContents("c9"));
             Assert.AreEqual(string.Empty, s.GetCellValue("c9"));
+            Assert.IsInstanceOfType<FormulaError>(s.GetCellValue("b3"));
 
             CollectionAssert.AreEqual(new List<string> { "B7", "B3" }, (List<string>)s.SetContentsOfCell("b7", "30"));
+            Assert.IsInstanceOfType<FormulaError>(s.GetCellValue("b3"));
         }
 
         /// <summary>
@@ -577,8 +606,45 @@ namespace SpreadsheetTests
 
             Assert.AreEqual("hello", s.GetCellContents("c9"));
             Assert.AreEqual("hello", s.GetCellValue("c9"));
+            Assert.IsInstanceOfType<FormulaError>(s.GetCellValue("b3"));
 
             CollectionAssert.AreEqual(new List<string> { "B7", "B3" }, (List<string>)s.SetContentsOfCell("b7", "nevermore"));
+            Assert.IsInstanceOfType<FormulaError>(s.GetCellValue("b3"));
+        }
+
+        /// <summary>
+        ///     Checks that when changing the contents of a cell from a formula with variables to a
+        ///     formula with other variables, the dependencies are correctly removed from the backing DependencyGraph.
+        /// </summary>
+        [TestMethod]
+        public void TestSetContentsOfCell_FormulaToFormula_CorrectList()
+        {
+            Spreadsheet s = new();
+            s.SetContentsOfCell("a3", "4.9");
+            s.SetContentsOfCell("b7", "=a3 + 27");
+            s.SetContentsOfCell("c9", "=64*53 + b7");
+            s.SetContentsOfCell("b3", "=c9-60 + b7");
+            s.SetContentsOfCell("d9", "32.8");
+            s.SetContentsOfCell("e8", "6.96");
+            s.SetContentsOfCell("l2", "3.2");
+
+            CollectionAssert.AreEqual(new List<string> { "B7", "C9", "B3" }, (List<string>)s.SetContentsOfCell("b7", "2"));
+
+            s.SetContentsOfCell("b7", "=a3 + 27");   // reset the spreadsheet
+
+            List<string> expected = new List<string> { "C9", "B3" };
+            List<string> actual = (List<string>)s.SetContentsOfCell("c9", "=(d9+e8) * 6");
+            CollectionAssert.AreEqual(expected, actual);
+
+            Assert.AreEqual(new Formula("(d9+e8) * 6"), s.GetCellContents("c9"));
+            Assert.AreEqual(238.56, s.GetCellValue("c9"));
+            Assert.AreEqual(210.46, s.GetCellValue("b3"));
+
+            CollectionAssert.AreEqual(new List<string> { "B7", "B3" }, (List<string>)s.SetContentsOfCell("b7", "=l2*5"));
+            Assert.AreEqual(16.0, s.GetCellValue("b7"));
+            Assert.AreEqual(194.56, s.GetCellValue("b3"));
+
+            CollectionAssert.AreEqual(new List<string> { "A3" }, (List<string>)s.SetContentsOfCell("a3", "hello"));
         }
 
     }
