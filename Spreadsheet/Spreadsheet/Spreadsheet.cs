@@ -15,7 +15,9 @@ namespace CS3500.Spreadsheet;
 using CS3500.Formula;
 using CS3500.DependencyGraph;
 using System.Text.RegularExpressions;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Encodings.Web;
 
 /// <summary>
 ///   <para>
@@ -115,11 +117,12 @@ public class Spreadsheet
     /// <summary>
     ///     A Dependency Graph to keep track of relationships among cells.
     /// </summary>
-    private DependencyGraph dg;
+    private DependencyGraph cellDependencies;
 
     /// <summary>
     ///     Keeps track of all non-empty cells. Maps cell names to Cell objects.
     /// </summary>
+    [JsonInclude]
     private Dictionary<string, Cell> Cells;
 
     /// <summary>
@@ -127,6 +130,7 @@ public class Spreadsheet
     ///     created or saved (whichever happened most recently),
     ///     False otherwise.
     /// </summary>
+    [JsonIgnore]
     public bool Changed { get; private set; }
 
     /// <summary>
@@ -134,7 +138,7 @@ public class Spreadsheet
     /// </summary>
     public Spreadsheet()
     {
-        dg = new();
+        cellDependencies = new();
         Cells = new();
         Changed = false;
     }
@@ -150,25 +154,26 @@ public class Spreadsheet
     /// <param name="filename">The path to the file containing the spreadsheet to load</param>
     public Spreadsheet(string filename)
     {
-        dg = new();
+        cellDependencies = new();
         Cells = new();
-        
 
         try
         {
-            using (StreamReader obj = new(filename) )
+            string jsonContent = File.ReadAllText(filename);
+            Spreadsheet? newSpreadsheet = JsonSerializer.Deserialize<Spreadsheet>(jsonContent) ?? throw new SpreadsheetReadWriteException("spreadsheet is null");
+            
+            foreach(string cellName in newSpreadsheet.Cells.Keys)
             {
-
+                SetContentsOfCell(cellName, newSpreadsheet.Cells[cellName].StringForm);
             }
+
+            Changed = false;
         }
         catch(Exception e)
         {
             throw new SpreadsheetReadWriteException(e.Message);
         }
 
-        Changed = false;
-
-        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -234,9 +239,25 @@ public class Spreadsheet
     /// </exception>
     public void Save(string filename)
     {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
 
-        Changed = false;
-        throw new NotImplementedException();
+        try
+        {
+            string asJson = JsonSerializer.Serialize(this, options);
+            Console.WriteLine(asJson);
+            File.WriteAllText(filename, asJson);
+
+            Changed = false;
+        }
+        catch (Exception)
+        {
+            throw new SpreadsheetReadWriteException("Error in saving spreadsheet to file");
+        }
+        
     }
 
     /// <summary>
@@ -265,13 +286,7 @@ public class Spreadsheet
     /// </returns>
     public ISet<string> GetNamesOfAllNonemptyCells()
     {
-        HashSet<string> names = new();
-        foreach (var cell in Cells)
-        {
-            names.Add(cell.Key);
-        }
-
-        return names;
+        return Cells.Keys.ToHashSet();
     }
 
     /// <summary>
@@ -415,7 +430,7 @@ public class Spreadsheet
             list = SetCellContents(name.ToUpper(), content);
         }
 
-        Recalculate(list);
+        Recalculate(list);  // recalculate the values of the cells that need to be updated
         Changed = true;
 
         return list;
@@ -452,7 +467,7 @@ public class Spreadsheet
     {
         if (Cells.TryGetValue(name, out Cell? cell))
         {
-            // remove old dependencies if required
+            // remove old dependencies if needed
             if(cell.Contents is Formula)
             {
                 RemoveDependencies(name, (Formula)cell.Contents);
@@ -484,19 +499,20 @@ public class Spreadsheet
     /// </returns>
     private IList<string> SetCellContents(string name, string text)
     {
-        if (text == string.Empty)   // remove the now empty cell from Dictionary
+        if (text == string.Empty)
         {
+            // remove old dependencies if needed
             if (Cells.TryGetValue(name, out Cell? cell) && cell.Contents is Formula)
             {
                 RemoveDependencies(name, (Formula)cell.Contents);
             }
-
+            // remove the now empty cell from Dictionary
             Cells.Remove(name);
 
         }
         else if (Cells.TryGetValue(name, out Cell? cell))
         {
-            // remove old dependencies if required
+            // remove old dependencies if needed
             if (cell.Contents is Formula)
             {
                 RemoveDependencies(name, (Formula)cell.Contents);
@@ -538,7 +554,7 @@ public class Spreadsheet
         HashSet<string> variables = (HashSet<string>)formula.GetVariables();
         foreach (string variable in variables)
         {
-            dg.AddDependency(variable, name);
+            cellDependencies.AddDependency(variable, name);
         }
 
         // store result to check if a CircularException occurs
@@ -546,7 +562,7 @@ public class Spreadsheet
 
         if (Cells.TryGetValue(name, out Cell? cell))
         {
-            // remove old dependencies if required
+            // remove old dependencies if needed
             if (cell.Contents is Formula)
             {
                 RemoveDependencies(name, (Formula)cell.Contents);
@@ -562,6 +578,15 @@ public class Spreadsheet
         return result;
     }
 
+    /// <summary>
+    ///     Private helper method that matches the delegate described in the Formula class to look up a cell's 
+    ///     value in order to calculate a formula that contains variables (other cell names).
+    /// </summary>
+    /// <param name="variable"> the cell name to look up its value</param>
+    /// <returns> the value of the variable/cell </returns>
+    /// <exception cref="ArgumentException"> 
+    ///     thrown if the cell doesn't exist in the spreadsheet (it has no contents/value) or the value
+    ///     is a string or a FormulaError. </exception>
     private double Lookup(string variable)
     {
         if(Cells.TryGetValue(variable, out Cell? cell) && (cell.Value is double value))
@@ -574,6 +599,12 @@ public class Spreadsheet
         }
     }
 
+    /// <summary>
+    ///     Private helper method to recalculate cell values after the contents of a cell is changed. Only recalculates
+    ///     the value of a cell when its contents is a Formula because those types of cells are what are dependent
+    ///     on other cells.
+    /// </summary>
+    /// <param name="list"> the list of cell names of which the values need to be recalculated </param>
     private void Recalculate(IList<string> list)
     {
         for(int i = 0; i < list.Count; i++)
@@ -597,7 +628,7 @@ public class Spreadsheet
         HashSet<string> variables = (HashSet<string>)formula.GetVariables();
         foreach (string variable in variables)
         {
-            dg.RemoveDependency(variable, name);
+            cellDependencies.RemoveDependency(variable, name);
         }
     }
 
@@ -622,7 +653,7 @@ public class Spreadsheet
     /// </returns>
     private IEnumerable<string> GetDirectDependents(string name)
     {
-        return dg.GetDependents(name.ToUpper());
+        return cellDependencies.GetDependents(name.ToUpper());
     }
 
     /// <summary>
@@ -724,27 +755,37 @@ public class Spreadsheet
 
     /// <summary>
     ///     Class that represents a cell in the spreadsheet.
-    ///     Stores the contents, which is of type double, string, or Formula,
-    ///     the value, which is of type double, string, or FormulaError, and
-    ///     the StringForm, which is the string form of the contents of the cell.
+    ///     Stores the contents, the value, and the StringForm (which is used in JSON to identify a Cell object
+    ///     and reconstruct one).
     /// </summary>
     private class Cell
     {
         /// <summary>
-        ///     Stores the contents of the cell, either a double, a string, or a Formula
+        ///     Stores the contents of the cell, either a double, a string, or a Formula.
         /// </summary>
+        [JsonIgnore]
         public object Contents {  get; set; }
 
         /// <summary>
-        ///     Stores the value of the cell, either a double, a string, or a FormulaError
+        ///     Stores the value of the cell, either a double, a string, or a FormulaError.
         /// </summary>
+        [JsonIgnore]
         public object Value { get; set; }
 
         /// <summary>
         ///     Stores the StringForm of a cell, either a string, or ("=" + formula.ToString()).
         /// </summary>
-        public object StringForm { get; set; }
+        public string StringForm { get; set; }
 
+        /// <summary>
+        ///     Default constructor for JSON reconstruction/deserializing.
+        /// </summary>
+        public Cell()
+        {
+            Contents = 0;
+            Value = 0;
+            StringForm = "";
+        }
         /// <summary>
         ///     Constructs a cell when the contents is a double.
         /// </summary>

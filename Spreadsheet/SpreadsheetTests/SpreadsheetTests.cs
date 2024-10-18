@@ -1,8 +1,9 @@
 // <author> Aishwarya Golakoti </author>
-// <date> 24 September 2024 </date>
+// <date> 18 October 2024 </date>
 // For CS3500
 using CS3500.Formula;
 using CS3500.Spreadsheet;
+using System.Text.Json;
 
 namespace SpreadsheetTests
 {
@@ -26,37 +27,71 @@ namespace SpreadsheetTests
         [TestMethod]
         public void TestConstructorWithFile_NoErrors_Successful()
         {
-            // create a spreadsheet using the file constructor with no errors
+            string sheet = "{\"Cells\": {\"A3\": {\"StringForm\": \"4.9\"}, \"B7\": {\"StringForm\": \"hello\"}, " +
+                "\"C9\": {\"StringForm\": \"=64*53+A3\"}}}";
+            File.WriteAllText("file.txt", sheet);
+
             Spreadsheet s = new("file.txt");
+
             Assert.IsFalse(s.Changed);
+            HashSet<string> expected = new HashSet<string> { "A3", "B7", "C9" };
+            Assert.IsTrue(expected.SetEquals(s.GetNamesOfAllNonemptyCells()));
+        }
+
+        /// <summary>
+        ///     Checks that when the deserializer returns a null value, an exception is thrown. When it's null, it 
+        ///     means the JSON is in invalid format. In this case, the string "sheet" that represents a JSON string
+        ///     is missing a set of curly braces, which is needed to denote something as a Dictionary.
+        /// </summary>
+        [TestMethod]
+        [ExpectedException(typeof(SpreadsheetReadWriteException))]
+        public void TestConstructorWithFile_Null_Exception()
+        {
+            string sheet = "{\"Cells\": \"A3\": {\"Property\": \"4.9\"}, \"B7\": {\"StringForm\": \"hello\"}, " +
+                "\"C9\": {\"StringForm\": \"=64*53+A3\"}}";
+            File.WriteAllText("file.txt", sheet);
+
+            _ = new Spreadsheet("file.txt");
         }
 
         [TestMethod]
         [ExpectedException(typeof(SpreadsheetReadWriteException))]
         public void TestConstructorWithFile_FilenameError_Exception()
         {
-            // create a spreadsheet using the file constructor with error in filename, expect exception
+            _ = new Spreadsheet("/some/nonsense/path.txt");
         }
 
         [TestMethod]
         [ExpectedException(typeof(SpreadsheetReadWriteException))]
         public void TestConstructorWithFile_InvalidCellNameError_Exception()
         {
-            // create a spreadsheet using the file constructor with invalid cell names, expect exception
+            string sheet = "{\"Cells\": {\"A3\": {\"StringForm\": \"4.9\"}, \"B7\": {\"StringForm\": \"hello\"}, " +
+                "\"C9B\": {\"StringForm\": \"=64*53+A3\"}}}";
+            File.WriteAllText("file.txt", sheet);
+
+            _ = new Spreadsheet("file.txt");
         }
 
         [TestMethod]
         [ExpectedException(typeof(SpreadsheetReadWriteException))]
         public void TestConstructorWithFile_InvalidFormulaError_Exception()
         {
-            // create a spreadsheet using the file constructor with invalid formula, expect exception
+            string sheet = "{\"Cells\": {\"A3\": {\"StringForm\": \"4.9\"}, \"B7\": {\"StringForm\": \"hello\"}, " +
+                "\"C9\": {\"StringForm\": \"=64*53#+A3\"}}}";
+            File.WriteAllText("file.txt", sheet);
+
+            _ = new Spreadsheet("file.txt");
         }
 
         [TestMethod]
         [ExpectedException(typeof(SpreadsheetReadWriteException))]
         public void TestConstructorWithFile_CircularDependencyError_Exception()
         {
-            // create a spreadsheet using the file constructor with a circular dependency, expect exception
+            string sheet = "{\"Cells\": {\"A3\": {\"StringForm\": \"=22/2+C9\"}, \"B7\": {\"StringForm\": \"hello\"}, " +
+                "\"C9\": {\"StringForm\": \"=64*53+A3\"}, \"B3\": {\"StringForm\": \"=A3/2+C9\"}}}";
+            File.WriteAllText("file.txt", sheet);
+
+            _ = new Spreadsheet("file.txt");
         }
 
         // ---- Tests for Save ----
@@ -64,14 +99,19 @@ namespace SpreadsheetTests
         [TestMethod]
         public void TestSave_NoErrors_Successful()
         {
-            // create a spreadsheet with stuff in it, save, no exception, check that it correctly uploaded things
-            // maybe by recreating it using the file in constructor and comparing the 2 resulting spreadsheets
-            // check that Changed is false.
-            Spreadsheet s = new("file.txt");
-            // add stuff blah blah blah
-            Assert.IsTrue(s.Changed);
-            // save file
-            Assert.IsFalse(s.Changed);
+            Spreadsheet s1 = new();
+            s1.SetContentsOfCell("a3", "4.9");
+            s1.SetContentsOfCell("b7", "hello");
+            s1.SetContentsOfCell("c9", "=64*53 + a3");
+
+            Assert.IsTrue(s1.Changed);
+            s1.Save("file.txt");
+            Assert.IsFalse(s1.Changed);
+
+            Spreadsheet s2 = new("file.txt");
+
+            Assert.AreEqual(JsonSerializer.Serialize(s1), JsonSerializer.Serialize(s2));
+            Assert.IsTrue(s1.GetNamesOfAllNonemptyCells().SetEquals(s2.GetNamesOfAllNonemptyCells()));
         }
 
         /// <summary>
@@ -80,32 +120,37 @@ namespace SpreadsheetTests
         [TestMethod]
         public void TestSave_ExistingFile_OverwriteFile()
         {
-            // create a spreadsheet with stuff in it, save to already existing file with a spreadsheet already
-            // uploaded in it, no exception, check that it correctly uploaded things
-            // maybe by recreating it using the file in constructor and comparing the 2 resulting spreadsheets
-            // check that Changed is false.
-            // check that file is overwritten by asserting false statements to ensure that the previous and the 
-            // current spreadsheet are different.
-            Spreadsheet s = new("file.txt");
-            // add stuff blah blah blah
-            Assert.IsTrue(s.Changed);
-            // save file
-            Assert.IsFalse(s.Changed);
+            string sheet = "{\"Cells\": {\"D8\": {\"StringForm\": \"9.10\"}, \"C3\": {\"StringForm\": \"30.8\"}, " +
+                "\"P9\": {\"StringForm\": \"NEVERmore\"}, \"H5\": {\"StringForm\": \"=39*C3+2\"}}}";
+            File.WriteAllText("existing_file.txt", sheet);
+
+            Spreadsheet oldSpreadsheet = new("existing_file.txt");
+
+            Spreadsheet newSpreadsheet = new();
+            newSpreadsheet.SetContentsOfCell("a3", "4.9");
+            newSpreadsheet.SetContentsOfCell("b7", "hello");
+            newSpreadsheet.SetContentsOfCell("c9", "=64*53 + a3");
+
+            Assert.IsTrue(newSpreadsheet.Changed);
+            newSpreadsheet.Save("existing_file.txt");   // save to existing file, so overwrite it
+            Assert.IsFalse(newSpreadsheet.Changed);
+
+            Assert.AreNotEqual(JsonSerializer.Serialize(oldSpreadsheet), JsonSerializer.Serialize(newSpreadsheet));
         }
 
         /// <summary>
         ///     Checks that when saving to a file that has an invalid name, an exception is thrown.
         /// </summary>
         [TestMethod]
-        [ExpectedException (typeof(SpreadsheetReadWriteException))]
         public void TestSave_Error_Exception()
         {
-            // create a spreadsheet with stuff in it, save with invalid filename, so exception.
-            // check that Changed property is not affected
             Spreadsheet s = new();
-            // add stuff blah blah blah
+            s.SetContentsOfCell("a3", "4.9");
+            s.SetContentsOfCell("b7", "hello");
+            s.SetContentsOfCell("c9", "=64*53 + a3");
+
             Assert.IsTrue(s.Changed);
-            // save file but error
+            Assert.ThrowsException<SpreadsheetReadWriteException>(() => { s.Save("/some/nonsense/path.txt"); });
             Assert.IsTrue(s.Changed);
         }
 
@@ -377,7 +422,7 @@ namespace SpreadsheetTests
             Assert.AreEqual(19.8, s.GetCellContents("a3"));
             Assert.AreEqual(19.8, s.GetCellValue("a3"));
 
-            // SAVE SOMETHING
+            Assert.IsTrue(s.Changed);
             s.Save("file.txt");
             Assert.IsFalse(s.Changed);
         }
@@ -471,7 +516,10 @@ namespace SpreadsheetTests
             s.SetContentsOfCell("b7", "hello");
             s.SetContentsOfCell("c9", "=64*53 + a3");
             s.SetContentsOfCell("b3", "=a3/2 + c9");
-            s.Save("file.txt"); // FIX FILE STUFF HERE
+
+            Assert.IsTrue(s.Changed);
+            s.Save("file.txt");
+            Assert.IsFalse(s.Changed);
 
             Assert.ThrowsException<CircularException>(() => { s.SetContentsOfCell("a3", "=22/2 + c9"); });
             Assert.IsFalse(s.Changed);
