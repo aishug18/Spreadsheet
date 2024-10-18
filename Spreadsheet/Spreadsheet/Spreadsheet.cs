@@ -248,7 +248,6 @@ public class Spreadsheet
         try
         {
             string asJson = JsonSerializer.Serialize(this, options);
-            Console.WriteLine(asJson);
             File.WriteAllText(filename, asJson);
 
             Changed = false;
