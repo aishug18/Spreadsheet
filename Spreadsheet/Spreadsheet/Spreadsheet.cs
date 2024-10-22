@@ -549,6 +549,12 @@ public class Spreadsheet
     /// </returns>
     private IList<string> SetCellContents(string name, Formula formula)
     {
+        // remove old dependencies if needed
+        if (Cells.TryGetValue(name, out Cell? cell) && cell.Contents is Formula)
+        {
+            RemoveDependencies(name, (Formula)cell.Contents);
+        }
+
         // update dependency graph with new dependencies if they exist
         HashSet<string> variables = (HashSet<string>)formula.GetVariables();
         foreach (string variable in variables)
@@ -559,13 +565,8 @@ public class Spreadsheet
         // store result to check if a CircularException occurs
         IList<string> result = GetCellsToRecalculate(name).ToList();
 
-        if (Cells.TryGetValue(name, out Cell? cell))
+        if (cell is not null)
         {
-            // remove old dependencies if needed
-            if (cell.Contents is Formula)
-            {
-                RemoveDependencies(name, (Formula)cell.Contents);
-            }
             cell.Contents = formula;
             cell.StringForm = "=" + formula.ToString();
         }
