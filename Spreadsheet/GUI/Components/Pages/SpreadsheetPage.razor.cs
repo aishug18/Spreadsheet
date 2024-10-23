@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Diagnostics;
+using CS3500.Spreadsheet;
 
 /// <summary>
 /// TODO: Fill in
@@ -43,6 +44,15 @@ public partial class SpreadsheetPage
     /// </summary>
     private string[,] CellsBackingStore { get; set; } = new string[ROWS, COLS];
 
+    private Spreadsheet spreadsheet = new();
+
+    private string SelectedCell = string.Empty;
+    private string CurrentContents = string.Empty;
+    private string CurrentValue = string.Empty;
+    private ElementReference TextArea;
+    private int SelectedRow = 0;
+    private int SelectedCol = 0;
+
 
     /// <summary>
     /// Handler for when a cell is clicked
@@ -51,7 +61,28 @@ public partial class SpreadsheetPage
     /// <param name="col">The column component of the cell's coordinates</param>
     private void CellClicked( int row, int col )
     {
+        SelectedCell = Alphabet[col] + (row + 1).ToString();
 
+        SelectedRow = row;
+        SelectedCol = col;
+
+        CurrentContents = spreadsheet.GetCellContents(SelectedCell).ToString() ?? ""; ;
+        CurrentValue = spreadsheet.GetCellValue(SelectedCell).ToString() ?? "";
+
+        TextArea.FocusAsync();
+    }
+
+    private void CellContentChanged(ChangeEventArgs e)
+    {
+        // This uses the null forgiving (!) and coalescing (??)
+        // operators to get either the value that was typed in,
+        // or the empty string if it was null
+        string data = e.Value!.ToString() ?? "";
+        spreadsheet.SetContentsOfCell(SelectedCell, data);
+
+        CellsBackingStore[SelectedRow, SelectedCol] = spreadsheet.GetCellValue(SelectedCell).ToString() ?? "";
+        CurrentContents = spreadsheet.GetCellContents(SelectedCell).ToString() ?? "";
+        CurrentValue = spreadsheet.GetCellValue(SelectedCell).ToString() ?? "";
     }
 
 

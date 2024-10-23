@@ -12,6 +12,11 @@
 <span>
     <button class="btn btn-primary" @onclick="SaveFile">Save</button>
     <label>Load</label><InputFile type="file" OnChange="HandleFileChooser" />
+    <br />
+    <label>Selected Cell:</label>    <input @bind="SelectedCell" readonly size="2"/>
+    <label>Contents:</label>    <input value="@CurrentContents" @ref="TextArea" @onchange="CellContentChanged" />
+    <label>Value:</label>   <input @bind="CurrentValue" readonly/>
+
 </span>
 
 <div>
