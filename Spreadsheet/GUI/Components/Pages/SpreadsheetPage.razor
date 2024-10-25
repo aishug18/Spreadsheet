@@ -13,11 +13,19 @@
     <button class="btn btn-primary" @onclick="SaveFile">Save</button>
     <label>Load</label><InputFile type="file" OnChange="HandleFileChooser" />
     <br />
+
     <label>Selected Cell:</label>    <input @bind="SelectedCell" readonly size="2"/>
     <label>Contents:</label>    <input value="@CurrentContents" @ref="TextArea" @onchange="CellContentChanged" />
-    <label>Value:</label>   <input @bind="CurrentValue" readonly/>
-
+    <label>Value:</label>   <input class="@GetTextClass(CurrentValue)" @bind="CurrentValue" readonly />
 </span>
+
+@if (ShowError)
+{
+    <div class="error-box">
+        <p style="font-size:18px;">Invalid Formula</p>
+        <button class="error-button" @onclick="HideError">OK</button>
+    </div>
+}
 
 <div>
     <div class="table-container">
@@ -44,7 +52,10 @@
                                 int c = col;
 
                                 <td @onclick="() => CellClicked(r,c)" style="padding:0px !important;">
-                                    <p class="spreadcell"> @CellsBackingStore[r, c]  </p>
+                                    <p class="spreadcell @GetTextClass(CellsBackingStore[r, c])">
+                                        @CellsBackingStore[r, c]
+                                    </p>
+
                                 </td>
                             }
                         </tr>
@@ -84,6 +95,37 @@
         width: 1000px;
         height: 500px;
         margin: -1px;
+    }
+
+    .error-box {
+        background-color: lightgray;
+        position: fixed;
+        padding: 30px;
+        border: 1.5px solid black;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        text-align: center;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+    }
+
+    .error-button{
+        background-color: crimson;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        text-align: center;
+    }
+
+    .error-button:hover {
+        background-color: darkred;
+    }
+
+    .red-text {
+        color: red;
     }
 </style>
 

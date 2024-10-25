@@ -239,16 +239,9 @@ public class Spreadsheet
     /// </exception>
     public void Save(string filename)
     {
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-        };
-
         try
         {
-            string asJson = JsonSerializer.Serialize(this, options);
-            File.WriteAllText(filename, asJson);
+            File.WriteAllText(filename, JsonSpreadsheetStringForm());
 
             Changed = false;
         }
@@ -257,6 +250,47 @@ public class Spreadsheet
             throw new SpreadsheetReadWriteException("Error in saving spreadsheet to file");
         }
         
+    }
+
+    /// <summary>
+    ///     method that returns the JSON string representing this spreadsheet.
+    /// </summary>
+    /// <returns></returns>
+    public string JsonSpreadsheetStringForm()
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+
+        return JsonSerializer.Serialize(this, options);
+    }
+
+    /// <summary>
+    ///     method that replaces the existing spreadsheet with a new one represented by a json string.
+    /// </summary>
+    /// <param name="json"></param>
+    public void ReplaceSpreadsheet(string json)
+    {
+        cellDependencies = new();
+        Cells = new();
+
+        try
+        {
+            Spreadsheet? newSpreadsheet = JsonSerializer.Deserialize<Spreadsheet>(json) ?? throw new SpreadsheetReadWriteException("spreadsheet is null");
+
+            foreach (string cellName in newSpreadsheet.Cells.Keys)
+            {
+                SetContentsOfCell(cellName, newSpreadsheet.Cells[cellName].StringForm);
+            }
+
+            Changed = false;
+        }
+        catch (Exception e)
+        {
+            throw new SpreadsheetReadWriteException(e.Message);
+        }
     }
 
     /// <summary>

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Diagnostics;
 using CS3500.Spreadsheet;
+using CS3500.Formula;
 
 /// <summary>
 /// TODO: Fill in
@@ -52,6 +53,7 @@ public partial class SpreadsheetPage
     private ElementReference TextArea;
     private int SelectedRow = 0;
     private int SelectedCol = 0;
+    private bool ShowError = false;
 
 
     /// <summary>
@@ -66,23 +68,83 @@ public partial class SpreadsheetPage
         SelectedRow = row;
         SelectedCol = col;
 
-        CurrentContents = spreadsheet.GetCellContents(SelectedCell).ToString() ?? ""; ;
-        CurrentValue = spreadsheet.GetCellValue(SelectedCell).ToString() ?? "";
+        CurrentContents = spreadsheet.GetCellContents(SelectedCell).ToString() ?? "";
+        CurrentValue = DisplayValue(spreadsheet.GetCellValue(SelectedCell));
 
         TextArea.FocusAsync();
+        StateHasChanged();
     }
 
+    /// <summary>
+    ///     method that takes action when the contents of a cell is changed.
+    /// </summary>
+    /// <param name="e"></param>
     private void CellContentChanged(ChangeEventArgs e)
     {
-        // This uses the null forgiving (!) and coalescing (??)
-        // operators to get either the value that was typed in,
-        // or the empty string if it was null
-        string data = e.Value!.ToString() ?? "";
-        spreadsheet.SetContentsOfCell(SelectedCell, data);
+        try
+        {
+            // process input
+            spreadsheet.SetContentsOfCell(SelectedCell, e.Value!.ToString() ?? "");
 
-        CellsBackingStore[SelectedRow, SelectedCol] = spreadsheet.GetCellValue(SelectedCell).ToString() ?? "";
-        CurrentContents = spreadsheet.GetCellContents(SelectedCell).ToString() ?? "";
-        CurrentValue = spreadsheet.GetCellValue(SelectedCell).ToString() ?? "";
+            string displayValue = DisplayValue(spreadsheet.GetCellValue(SelectedCell));
+
+            CellsBackingStore[SelectedRow, SelectedCol] = displayValue;
+
+            CurrentContents = spreadsheet.GetCellContents(SelectedCell).ToString() ?? "";
+            CurrentValue = displayValue;
+        }
+        catch (Exception)
+        {
+            // display error box
+            ShowError = true;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    ///     method to return the value that should be displayed on the spreadsheet
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    private string DisplayValue(object value)
+    {
+        if (value is FormulaError)
+        {
+            return "Formula Error";
+        }
+        else
+        {
+            return value.ToString() ?? "";
+        }
+    }
+
+    /// <summary>
+    ///     method to hide error box
+    /// </summary>
+    private void HideError()
+    {
+        ShowError = false;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    ///     method to change text color if input results in formula error
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public string GetTextClass(string value)
+    {
+        // If the value is "Formula Error", return the class for red text
+        if (value == "Formula Error")
+        {
+            return "red-text";
+        }
+
+        // Otherwise return an empty string (no special class)
+        return "";
     }
 
 
@@ -93,7 +155,7 @@ public partial class SpreadsheetPage
     private async void SaveFile()
     {
         await JSRuntime.InvokeVoidAsync( "downloadFile", FileSaveName, 
-            "replace this with the json representation of the current spreadsheet" );
+            spreadsheet.JsonSpreadsheetStringForm() );
     }
 
     /// <summary>
@@ -124,6 +186,7 @@ public partial class SpreadsheetPage
                 fileContent = await reader.ReadToEndAsync();
 
                 // TODO: Use the loaded fileContent to replace the current spreadsheet
+                spreadsheet.ReplaceSpreadsheet( fileContent );
 
                 StateHasChanged();
             }
