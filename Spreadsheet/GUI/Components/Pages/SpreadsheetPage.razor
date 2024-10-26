@@ -1,4 +1,9 @@
-﻿@namespace GUI.Client.Pages
+﻿@* <author> Aishwarya Golakoti </author> */
+// <date> _ October 2024 </date>
+// For CS 3500 *@
+
+
+@namespace GUI.Client.Pages
 @page "/sheets"
 @using System.Diagnostics
 @using Microsoft.JSInterop
@@ -14,18 +19,15 @@
     <label>Load</label><InputFile type="file" OnChange="HandleFileChooser" />
     <br />
 
-    <label>Selected Cell:</label>    <input @bind="SelectedCell" readonly size="2"/>
-    <label>Contents:</label>    <input value="@CurrentContents" @ref="TextArea" @onchange="CellContentChanged" />
-    <label>Value:</label>   <input class="@GetTextClass(CurrentValue)" @bind="CurrentValue" readonly />
-</span>
+    <label>Selected Cell:</label>
+        <input @bind="SelectedCell" readonly size="2"/>
 
-@if (ShowError)
-{
-    <div class="error-box">
-        <p style="font-size:18px;">Invalid Formula</p>
-        <button class="error-button" @onclick="HideError">OK</button>
-    </div>
-}
+    <label>Contents:</label>
+        <input value="@CurrentContents" @ref="TextArea" placeholder="Enter contents" @onchange="CellContentChanged" />
+    
+    <label>Value:</label>
+        <input class="@GetTextClass(CurrentValue)" @bind="CurrentValue" readonly />
+</span>
 
 <div>
     <div class="table-container">
@@ -51,7 +53,7 @@
                                 int r = row;
                                 int c = col;
 
-                                <td @onclick="() => CellClicked(r,c)" style="padding:0px !important;">
+                                <td @onclick="() => CellClicked(r,c)" class="@(IsSelectedCell(row, col) ? "focus-outline" : "")" style="padding:0px !important;">
                                     <p class="spreadcell @GetTextClass(CellsBackingStore[r, c])">
                                         @CellsBackingStore[r, c]
                                     </p>
@@ -66,10 +68,23 @@
     </div>
 </div>
 
+@if (ShowError)
+{
+    <div class="error-box">
+        <p style="font-size:18px;">Invalid Formula</p>
+        <button class="error-button" @onclick="HideError">OK</button>
+    </div>
+}
+
 <style>
     .spreadcell {
         width: 150px;
-        height: 40px;
+        height: 50px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+        margin: 0;
+        overflow: auto;
     }
 
     .table-container {
@@ -126,6 +141,11 @@
 
     .red-text {
         color: red;
+    }
+
+    .focus-outline {
+        outline: 2px solid black;
+        outline-offset: -2px;
     }
 </style>
 

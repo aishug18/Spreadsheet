@@ -253,9 +253,9 @@ public class Spreadsheet
     }
 
     /// <summary>
-    ///     method that returns the JSON string representing this spreadsheet.
+    ///     Returns the JSON string representation of this spreadsheet.
     /// </summary>
-    /// <returns></returns>
+    /// <returns> JSON string representation of this spreadsheet</returns>
     public string JsonSpreadsheetStringForm()
     {
         var options = new JsonSerializerOptions
@@ -268,9 +268,9 @@ public class Spreadsheet
     }
 
     /// <summary>
-    ///     method that replaces the existing spreadsheet with a new one represented by a json string.
+    ///     Replaces the existing spreadsheet with a new spreadsheet represented by a json string.
     /// </summary>
-    /// <param name="json"></param>
+    /// <param name="json"> the json string representation of the new spreadsheet</param>
     public void ReplaceSpreadsheet(string json)
     {
         cellDependencies = new();

@@ -1,6 +1,16 @@
 ﻿// <copyright file="SpreadsheetPage.razor.cs" company="UofU-CS3500">
 // Copyright (c) 2024 UofU-CS3500. All rights reserved.
 // </copyright>
+// <author> Aishwarya Golakoti </author>
+// <date> _ October 2024 </date>
+// For CS 3500
+//
+// used ChatGPT for help mostly with syntax and GUI-related logic. These include:
+//  - the async stuff to ensure A1 is first selected and the user can type things into the input box without
+//      selecting anything when the page is first opened or when a new spreadsheet is loaded into the page.
+//  - the error box and how to make that appear on the page.
+//  - when clicking on a cell, that cell in the grid is outlined to show the user visually which cell they 
+//      selected.
 
 namespace GUI.Client.Pages;
 
@@ -45,15 +55,56 @@ public partial class SpreadsheetPage
     /// </summary>
     private string[,] CellsBackingStore { get; set; } = new string[ROWS, COLS];
 
+    /// <summary>
+    ///     Backing spreadsheet to store all of the data.
+    /// </summary>
     private Spreadsheet spreadsheet = new();
 
-    private string SelectedCell = string.Empty;
+    /// <summary>
+    ///     The selected cell in the grid, a letter followed by numbers. Initially set to "A1" when
+    ///     application is first opened.
+    /// </summary>
+    private string SelectedCell = "A1";
+
+    /// <summary>
+    ///     The contents of the selected cell.
+    /// </summary>
     private string CurrentContents = string.Empty;
+
+    /// <summary>
+    ///     The value of the selected cell.
+    /// </summary>
     private string CurrentValue = string.Empty;
+
+    /// <summary>
+    ///     SOMETHING TODO
+    /// </summary>
     private ElementReference TextArea;
+
+    /// <summary>
+    ///     The row component of the selected cell's coordinates, from 0 to ROWS-1.
+    /// </summary>
     private int SelectedRow = 0;
+
+    /// <summary>
+    ///     The column component of the selected cell's coordinates, from 0 to COLS-1.
+    /// </summary>
     private int SelectedCol = 0;
+
+    /// <summary>
+    ///     True if an invalid formula was entered (which causes an exception), false if otherwise.
+    /// </summary>
     private bool ShowError = false;
+
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await TextArea.FocusAsync();
+        }
+    }
 
 
     /// <summary>
@@ -64,39 +115,50 @@ public partial class SpreadsheetPage
     private void CellClicked( int row, int col )
     {
         SelectedCell = Alphabet[col] + (row + 1).ToString();
-
         SelectedRow = row;
         SelectedCol = col;
 
-        CurrentContents = spreadsheet.GetCellContents(SelectedCell).ToString() ?? "";
+        CurrentContents = GetCurrentContents();
         CurrentValue = DisplayValue(spreadsheet.GetCellValue(SelectedCell));
+
+        Debug.WriteLine(CurrentContents);
 
         TextArea.FocusAsync();
         StateHasChanged();
     }
 
     /// <summary>
-    ///     method that takes action when the contents of a cell is changed.
+    ///     Determines if the cell is selected.
+    /// </summary>
+    /// <param name="row">The row component of a cell's coordinates</param>
+    /// <param name="col">The column component of a cell's coordinates</param>
+    /// <returns> true if the cell described by its coordinates is the selected cell, false if otherwise.</returns>
+    private bool IsSelectedCell(int row, int col)
+    {
+        return row == SelectedRow && col == SelectedCol;
+    }
+
+    /// <summary>
+    ///     Updates the backing spreadsheet and all of the things that are displayed on the page when a cell's
+    ///     contents are changed.
     /// </summary>
     /// <param name="e"></param>
     private void CellContentChanged(ChangeEventArgs e)
     {
         try
         {
-            // process input
-            spreadsheet.SetContentsOfCell(SelectedCell, e.Value!.ToString() ?? "");
+            IList<string> cellsToUpdate = spreadsheet.SetContentsOfCell(SelectedCell, e.Value!.ToString() ?? "");
+            RefreshCells(cellsToUpdate);
 
             string displayValue = DisplayValue(spreadsheet.GetCellValue(SelectedCell));
 
             CellsBackingStore[SelectedRow, SelectedCol] = displayValue;
-
-            CurrentContents = spreadsheet.GetCellContents(SelectedCell).ToString() ?? "";
+            CurrentContents = GetCurrentContents();
             CurrentValue = displayValue;
         }
         catch (Exception)
         {
-            // display error box
-            ShowError = true;
+            ShowError = true;   // an invalid formula is inputted, so show the error box
         }
         finally
         {
@@ -105,10 +167,27 @@ public partial class SpreadsheetPage
     }
 
     /// <summary>
-    ///     method to return the value that should be displayed on the spreadsheet
+    ///     Returns the current contents of the selected cell, ensuring that if the contents is a formula, 
+    ///     then the "=" remains in the contents.
     /// </summary>
-    /// <param name="value"></param>
-    /// <returns></returns>
+    /// <returns> the current contents of SelectedCell</returns>
+    private string GetCurrentContents()
+    {
+        if (spreadsheet.GetCellContents(SelectedCell) is Formula)
+        {
+            return "=" + spreadsheet.GetCellContents(SelectedCell).ToString();
+        }
+        else
+        {
+            return spreadsheet.GetCellContents(SelectedCell).ToString() ?? "";
+        }
+    }
+
+    /// <summary>
+    ///     Returns the value that should be displayed on the spreadsheet page.
+    /// </summary>
+    /// <param name="value"> the value of the cell, which is either a string, a double, or a FormulaError</param>
+    /// <returns> the value that should be displayed </returns>
     private string DisplayValue(object value)
     {
         if (value is FormulaError)
@@ -122,31 +201,76 @@ public partial class SpreadsheetPage
     }
 
     /// <summary>
-    ///     method to hide error box
+    ///     Update the display values of cells whose values are changed.
+    ///     Essentially "refreshes" the spreadsheet to reflect the new changes.
     /// </summary>
-    private void HideError()
+    /// <param name="list"> the list of cells that need their values that are displayed to be updated </param>
+    private void RefreshCells(IList<string> list)
     {
-        ShowError = false;
+        foreach(string cell in list)
+        {
+            int row = Int32.Parse(cell.Substring(1)) - 1;
+            int col = Array.IndexOf(Alphabet, cell.First());
+
+            CellsBackingStore[row, col] = DisplayValue(spreadsheet.GetCellValue(cell));
+        }
         StateHasChanged();
     }
 
     /// <summary>
-    ///     method to change text color if input results in formula error
+    ///     When a new spreadsheet is loaded into the page, this method ensures that the new displayed values 
+    ///     reflect the new changes and gets rid of the existing spreadsheet.
+    ///     Essentially "refreshes" the spreadsheet to reflect the new changes.
     /// </summary>
-    /// <param name="value"></param>
-    /// <returns></returns>
+    private void RefreshSpreadsheet()
+    {
+        for(int row = 0; row < ROWS; row++)
+        {
+            for(int col = 0; col < COLS; col++)
+            {
+                CellsBackingStore[row, col] = DisplayValue(spreadsheet.GetCellValue(Alphabet[col] + (row + 1).ToString()));
+            }
+        }
+
+        // ensures the current selected cell is A1
+        SelectedCell = "A1";
+        SelectedRow = 0;
+        SelectedCol = 0;
+
+        CurrentContents = GetCurrentContents();
+        CurrentValue = DisplayValue(spreadsheet.GetCellValue(SelectedCell));
+
+        InvokeAsync(async () => await TextArea.FocusAsync());
+    }
+
+    /// <summary>
+    ///     Hides error box that appears for an invalid formula.
+    /// </summary>
+    private void HideError()
+    {
+        ShowError = false;
+        Debug.WriteLine(CurrentContents);
+        StateHasChanged();
+
+        TextArea.FocusAsync();
+    }
+
+    /// <summary>
+    ///     Changes the text color of the displayed values if the contents of the selected results in a 
+    ///     FormulaError as the value.
+    /// </summary>
+    /// <param name="value"> the value of the selected cell </param>
+    /// <returns>
+    ///     the text class, either "red-text" if value is a FormulaError, or an empty string if otherwise.
+    /// </returns>
     public string GetTextClass(string value)
     {
-        // If the value is "Formula Error", return the class for red text
         if (value == "Formula Error")
         {
             return "red-text";
         }
-
-        // Otherwise return an empty string (no special class)
         return "";
     }
-
 
     /// <summary>
     /// Saves the current spreadsheet, by providing a download of a file
@@ -185,8 +309,8 @@ public partial class SpreadsheetPage
                 // fileContent will contain the contents of the loaded file
                 fileContent = await reader.ReadToEndAsync();
 
-                // TODO: Use the loaded fileContent to replace the current spreadsheet
                 spreadsheet.ReplaceSpreadsheet( fileContent );
+                RefreshSpreadsheet();
 
                 StateHasChanged();
             }
