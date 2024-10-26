@@ -18,6 +18,7 @@ using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Encodings.Web;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 /// <summary>
 ///   <para>
@@ -283,6 +284,7 @@ public class Spreadsheet
             foreach (string cellName in newSpreadsheet.Cells.Keys)
             {
                 SetContentsOfCell(cellName, newSpreadsheet.Cells[cellName].StringForm);
+                SetCellColor(cellName, newSpreadsheet.Cells[cellName].CellColor);
             }
 
             Changed = false;
@@ -375,6 +377,56 @@ public class Spreadsheet
         else
         {
             return string.Empty;
+        }
+    }
+
+    /// <summary>
+    ///     Returns the color of the named cell. If the cell does not exist (has no data), returns the 
+    ///     default white.
+    /// </summary>
+    /// <param name="name">the cell in question</param>
+    /// <returns>the string of the color of the cell</returns>
+    /// <exception cref="InvalidNameException">
+    ///     If the provided name is invalid, throws an InvalidNameException.
+    /// </exception>
+    public string GetCellColor(string name)
+    {
+        if (!IsValidName(name))
+            throw new InvalidNameException();
+
+        if (Cells.TryGetValue(name.ToUpper(), out Cell? cell))
+        {
+            return cell.CellColor;
+        }
+        else
+        {
+            return "#ffffff";
+        }
+    }
+
+    /// <summary>
+    ///     Sets the color of the cell to the provided string. If the cell doesn't exist (it has no data),
+    ///     creates a new Cell with empty Contents and Values (so still has no data), and sets its color 
+    ///     to the provided string.
+    /// </summary>
+    /// <param name="name">the cell in question</param>
+    /// <param name="color">the new color of the cell</param>
+    /// <exception cref="InvalidNameException">
+    ///     If the provided name is invalid, throws an InvalidNameException.
+    /// </exception>
+    public void SetCellColor(string name, string color)
+    {
+        if (!IsValidName(name))
+            throw new InvalidNameException();
+
+        if (Cells.TryGetValue(name.ToUpper(), out Cell? cell))
+        {
+            cell.CellColor = color;
+        }
+        else
+        {
+            Cells.Add(name, new Cell());
+            Cells[name].CellColor = color;
         }
     }
 
@@ -812,12 +864,17 @@ public class Spreadsheet
         public string StringForm { get; set; }
 
         /// <summary>
+        ///     Stores the color of the cell. Default is white.
+        /// </summary>
+        public string CellColor { get; set; } = "#ffffff";
+
+        /// <summary>
         ///     Default constructor for JSON reconstruction/deserializing.
         /// </summary>
         public Cell()
         {
-            Contents = 0;
-            Value = 0;
+            Contents = "";
+            Value = "";
             StringForm = "";
         }
         /// <summary>

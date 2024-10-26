@@ -1,9 +1,10 @@
-﻿@* <author> Aishwarya Golakoti </author> */
-// <date> _ October 2024 </date>
-// For CS 3500 *@
+﻿@* <author> Aishwarya Golakoti </author>
+    <date> _ October 2024 </date>
+    For CS 3500 *@
 
 
 @namespace GUI.Client.Pages
+@page "/"
 @page "/sheets"
 @using System.Diagnostics
 @using Microsoft.JSInterop
@@ -16,17 +17,20 @@
 
 <span>
     <button class="btn btn-primary" @onclick="SaveFile">Save</button>
-    <label>Load</label><InputFile type="file" OnChange="HandleFileChooser" />
+    <label>Load </label><InputFile type="file" OnChange="HandleFileChooser" />
     <br />
 
     <label>Selected Cell:</label>
         <input @bind="SelectedCell" readonly size="2"/>
 
     <label>Contents:</label>
-        <input value="@CurrentContents" @ref="TextArea" placeholder="Enter contents" @onchange="CellContentChanged" />
+    <input value="@CurrentContents" @ref="TextArea" placeholder="Enter contents" @onchange="CellContentChanged" />
     
     <label>Value:</label>
-        <input class="@GetTextClass(CurrentValue)" @bind="CurrentValue" readonly />
+    <input class="@GetTextClass(CurrentValue)" @bind="CurrentValue" readonly />
+
+    <label>Choose Cell Color: </label>
+        <input type="color" @bind="SelectedColor" />
 </span>
 
 <div>
@@ -53,7 +57,8 @@
                                 int r = row;
                                 int c = col;
 
-                                <td @onclick="() => CellClicked(r,c)" class="@(IsSelectedCell(row, col) ? "focus-outline" : "")" style="padding:0px !important;">
+                                <td @onclick="() => CellClicked(r,c)" class="@(IsSelectedCell(r, c) ? "focus-outline" : "")"
+                                    style="background-color: @CellColors[r, c]; padding:0px !important;">
                                     <p class="spreadcell @GetTextClass(CellsBackingStore[r, c])">
                                         @CellsBackingStore[r, c]
                                     </p>
@@ -74,6 +79,65 @@
         <p style="font-size:18px;">Invalid Formula</p>
         <button class="error-button" @onclick="HideError">OK</button>
     </div>
+}
+
+@code{
+
+    /// <summary>
+    ///     Stores the colors of the cells.
+    /// </summary>
+    private string[,] CellColors { get; set; } = new string[ROWS, COLS];
+
+    /// <summary>
+    ///     Private member variable that holds the color of the selected cell; default is white.
+    /// </summary>
+    private string selectedColor = "#ffffff";
+
+    /// <summary>
+    ///     Property of the selected color. When the selected color is changed, meaning the cell is changed
+    ///     color, the value of CellColors at the selected cell is updated accordingly.
+    /// </summary>
+    private string SelectedColor
+    {
+        get { return selectedColor; }
+        set
+        {
+            selectedColor = value;
+            CellColors[SelectedRow, SelectedCol] = selectedColor;
+            spreadsheet.SetCellColor(SelectedCell, selectedColor);
+        }
+    }
+
+    /// <summary>
+    ///     When the page is first loaded, set all of the cell colors to white.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        for (int row = 0; row < ROWS; row++)
+        {
+            for (int col = 0; col < COLS; col++)
+            {
+                CellColors[row, col] = "#ffffff";
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Changes the text color of the displayed values if the contents of the selected results in a
+    ///     FormulaError as the value.
+    /// </summary>
+    /// <param name="value"> the value of the selected cell </param>
+    /// <returns>
+    ///     the text class, either "red-text" if value is a FormulaError, or an empty string if otherwise.
+    /// </returns>
+    private string GetTextClass(string value)
+    {
+        if (value == "Formula Error")
+        {
+            return "red-text";
+        }
+        return "";
+    }
 }
 
 <style>
@@ -151,6 +215,7 @@
 
 
 <script type="text/javascript">
+    
     function focusElement(id) {
         console.log(`looking for: ${id}`);
         var element = document.getElementById(id);

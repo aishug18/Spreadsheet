@@ -11,6 +11,7 @@
 //  - the error box and how to make that appear on the page.
 //  - when clicking on a cell, that cell in the grid is outlined to show the user visually which cell they 
 //      selected.
+//  - the color picker and how to change the colors of the cells.
 
 namespace GUI.Client.Pages;
 
@@ -23,7 +24,8 @@ using CS3500.Spreadsheet;
 using CS3500.Formula;
 
 /// <summary>
-/// TODO: Fill in
+///     This class contains the behind-the-scenes code for the Spreadsheet GUI page. It helps in displaying
+///     the correct values with the correct format in the spreadsheet page.
 /// </summary>
 public partial class SpreadsheetPage
 {
@@ -42,12 +44,10 @@ public partial class SpreadsheetPage
     /// </summary>
     private char[] Alphabet { get; } = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray();
 
-
     /// <summary>
     ///   Gets or sets the name of the file to be saved
     /// </summary>
     private string FileSaveName { get; set; } = "Spreadsheet.sprd";
-
 
     /// <summary>
     ///   <para> Gets or sets the data for all of the cells in the spreadsheet GUI. </para>
@@ -77,7 +77,7 @@ public partial class SpreadsheetPage
     private string CurrentValue = string.Empty;
 
     /// <summary>
-    ///     SOMETHING TODO
+    ///     Reference to the input box where the user can type in the contents of the selected cell.
     /// </summary>
     private ElementReference TextArea;
 
@@ -96,8 +96,12 @@ public partial class SpreadsheetPage
     /// </summary>
     private bool ShowError = false;
 
-
-
+    /// <summary>
+    ///     When the page is first loaded, this method ensures that the Contents input box, referred to by
+    ///     TextArea, is focused, so the user can start typing things without having to click on anything.
+    /// </summary>
+    /// <param name="firstRender"></param>
+    /// <returns></returns>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -105,7 +109,6 @@ public partial class SpreadsheetPage
             await TextArea.FocusAsync();
         }
     }
-
 
     /// <summary>
     /// Handler for when a cell is clicked
@@ -121,21 +124,10 @@ public partial class SpreadsheetPage
         CurrentContents = GetCurrentContents();
         CurrentValue = DisplayValue(spreadsheet.GetCellValue(SelectedCell));
 
-        Debug.WriteLine(CurrentContents);
+        SelectedColor = CellColors[row, col];
 
         TextArea.FocusAsync();
         StateHasChanged();
-    }
-
-    /// <summary>
-    ///     Determines if the cell is selected.
-    /// </summary>
-    /// <param name="row">The row component of a cell's coordinates</param>
-    /// <param name="col">The column component of a cell's coordinates</param>
-    /// <returns> true if the cell described by its coordinates is the selected cell, false if otherwise.</returns>
-    private bool IsSelectedCell(int row, int col)
-    {
-        return row == SelectedRow && col == SelectedCol;
     }
 
     /// <summary>
@@ -229,6 +221,7 @@ public partial class SpreadsheetPage
             for(int col = 0; col < COLS; col++)
             {
                 CellsBackingStore[row, col] = DisplayValue(spreadsheet.GetCellValue(Alphabet[col] + (row + 1).ToString()));
+                CellColors[row, col] = spreadsheet.GetCellColor(Alphabet[col] + (row + 1).ToString());
             }
         }
 
@@ -236,10 +229,12 @@ public partial class SpreadsheetPage
         SelectedCell = "A1";
         SelectedRow = 0;
         SelectedCol = 0;
+        SelectedColor = CellColors[0, 0];
 
         CurrentContents = GetCurrentContents();
         CurrentValue = DisplayValue(spreadsheet.GetCellValue(SelectedCell));
 
+        // focus on the Contents input box
         InvokeAsync(async () => await TextArea.FocusAsync());
     }
 
@@ -249,27 +244,19 @@ public partial class SpreadsheetPage
     private void HideError()
     {
         ShowError = false;
-        Debug.WriteLine(CurrentContents);
         StateHasChanged();
-
         TextArea.FocusAsync();
     }
 
     /// <summary>
-    ///     Changes the text color of the displayed values if the contents of the selected results in a 
-    ///     FormulaError as the value.
+    ///     Determines if the cell is selected.
     /// </summary>
-    /// <param name="value"> the value of the selected cell </param>
-    /// <returns>
-    ///     the text class, either "red-text" if value is a FormulaError, or an empty string if otherwise.
-    /// </returns>
-    public string GetTextClass(string value)
+    /// <param name="row">The row component of a cell's coordinates</param>
+    /// <param name="col">The column component of a cell's coordinates</param>
+    /// <returns> true if the cell described by its coordinates is the selected cell, false if otherwise.</returns>
+    private bool IsSelectedCell(int row, int col)
     {
-        if (value == "Formula Error")
-        {
-            return "red-text";
-        }
-        return "";
+        return row == SelectedRow && col == SelectedCol;
     }
 
     /// <summary>
