@@ -24,7 +24,8 @@
         <input @bind="SelectedCell" readonly size="2"/>
 
     <label>Contents:</label>
-    <input value="@CurrentContents" @ref="TextArea" placeholder="Enter contents" @onchange="CellContentChanged" />
+    <input @bind-value="CurrentContents" @bind-value:event="oninput" type="text" @ref="TextArea" 
+        placeholder="Enter contents" @onchange ="CellContentChanged" />
     
     <label>Value:</label>
     <input class="@GetTextClass(CurrentValue)" @bind="CurrentValue" readonly />
@@ -170,6 +171,7 @@
     private void HideError()
     {
         ShowError = false;
+        CurrentContents = GetCurrentContents();
         StateHasChanged();
         TextArea.FocusAsync();
     }

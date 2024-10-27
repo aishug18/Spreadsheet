@@ -11,37 +11,42 @@
 
 <p>This page will help you get started on how to use the spreadsheet.</p>
 
-<p>There are two things to keep in mind when using the spreadsheet: Contents and Value.</p>
-
-<p> The contents of a cell is what you will be inputting as the data for the cell. The contents can be either a 
-    number, a string (a word or a letter), or a formula. A formula is identified by the "=" at the beginning of 
-    the input. Without the "=", your formula would be processed as a string.
+<p> Get started by selecting a cell, entering some contents into the input box labeled "Contents", and hitting 
+    "Enter" to display the data in the spreadsheet grid.
+</p>
+    
+<p> The valid contents are a string (a word or a letter), a number, or a formula. A formula is identified by the 
+    "=" at the beginning of the input. Without the "=", your formula would be processed as a string.
 </p>
 
-<p> The value of a cell is the result from evaluated the contents. It will be the same as the contents if the 
-    contents is some number or word, but when the contents is a formula, the value will be the result from evaluating
-    the formula. If you enter a formula that when evaluating results in an error, (for example, you enter "=A1+2" 
-    but A1 contains  the word "hello"), then the value is a Formula Error. In the spreadsheet table, only values 
-    are displayed.
+<p> The value of a cell is the result from evaluating the contents. It will be the same as the contents if the 
+    contents is a number or word, but when the contents is a formula, the value will be the result from evaluating 
+    the formula.
 </p>
 
-<p> When you input an invalid formula (for example entering "=2$3" because $ is not a valid operator or referring to
-    an invalid cell name such as D8D), then you get an error message, and your spreadsheet will not be changed.
+<p> If you enter a formula that when evaluating results in an error, (for example, you enter "=A1+2" but A1 
+    contains the word "hello"), then the value is "Formula Error".
+</p>
+
+<p> If you input an invalid formula, then you get an error message, and your spreadsheet will not be changed. Invalid 
+    formulas occur when you use invalid tokens within the formula, refer to an invalid cell name, or refer to a cell
+    that will cause a cycle (for example, A1 contains "=B1+2" but B1 contains "=A1+2" which causes a cycle). The only
+    valid tokens allowed are +, -, *, /, (, ), a cell name, and any number (including integers, decimals, and 
+    numbers in scientific notation). Negative numbers are NOT allowed, but the formula can evaluate to a negative 
+    number.
 </p>
 
 <p> UNIQUE FEATURE: You can customize your spreadsheet by changing the colors of your cells. By default, all cell 
-    colors are white. You can change the cell colors by clicking on the box next to "Choose Cell Color: " and 
+    colors are white. You can change the cell colors by clicking on the box next to "Choose Cell Color:" and 
     selecting a color from the color picker.
 </p>
 
-<p> You can save your spreadsheet by clicking on the blue "Save" button and saving the file somewhere on your computer.
-    By saving your spreadsheet, you will be able to save the contents, the values, and even the cell colors. Note 
-    that if you refresh the page without saving your spreadsheet, you will lose that spreadsheet.
+<p> You can save your spreadsheet by clicking on the "Save" button. Saving your spreadsheet saves all of the data, 
+    including the cell colors. Note that if you refresh the page without saving your spreadsheet, you will lose 
+    that spreadsheet.
 </p>
 
 <p> You can also load an existing spreadsheet into the page by clicking on the "Load" button and selecting a file that
     you want to load. If you try to load a file that does not translate to a valid spreadsheet, the current 
     spreadsheet will not be changed.
 </p>
-
-<p>That's it! Have fun using the spreadsheet!</p>

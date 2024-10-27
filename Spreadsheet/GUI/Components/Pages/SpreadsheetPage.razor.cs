@@ -70,6 +70,7 @@ public partial class SpreadsheetPage
     ///     The contents of the selected cell.
     /// </summary>
     private string CurrentContents = string.Empty;
+    private string CurrentContents1 = "hello";
 
     /// <summary>
     ///     The value of the selected cell.
@@ -112,8 +113,6 @@ public partial class SpreadsheetPage
 
         SelectedColor = CellColors[row, col];
 
-        Debug.WriteLine(CurrentContents + ", " + CurrentValue);
-
         TextArea.FocusAsync();
         StateHasChanged();
     }
@@ -135,14 +134,10 @@ public partial class SpreadsheetPage
             CellsBackingStore[SelectedRow, SelectedCol] = displayValue;
             CurrentContents = GetCurrentContents();
             CurrentValue = displayValue;
-
-            Debug.WriteLine(CurrentContents + ", " + CurrentValue);
         }
         catch (Exception)
         {
             ShowError = true;   // an invalid formula is inputted, so show the error box
-
-            Debug.WriteLine(CurrentContents + ", " + CurrentValue);
         }
         finally
         {
