@@ -123,6 +123,20 @@
     }
 
     /// <summary>
+    ///     When the page is first loaded, this method ensures that the Contents input box, referred to by
+    ///     TextArea, is focused, so the user can start typing things without having to click on anything.
+    /// </summary>
+    /// <param name="firstRender"></param>
+    /// <returns></returns>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await TextArea.FocusAsync();
+        }
+    }
+
+    /// <summary>
     ///     Changes the text color of the displayed values if the contents of the selected results in a
     ///     FormulaError as the value.
     /// </summary>
@@ -137,6 +151,27 @@
             return "red-text";
         }
         return "";
+    }
+
+    /// <summary>
+    ///     Determines if a cell is the SelectedCell so that an outline can appear around the cell.
+    /// </summary>
+    /// <param name="row">The row component of a cell's coordinates</param>
+    /// <param name="col">The column component of a cell's coordinates</param>
+    /// <returns> true if the cell described by its coordinates is the selected cell, false if otherwise.</returns>
+    private bool IsSelectedCell(int row, int col)
+    {
+        return row == SelectedRow && col == SelectedCol;
+    }
+
+    /// <summary>
+    ///     Hides error box that appears for an invalid formula.
+    /// </summary>
+    private void HideError()
+    {
+        ShowError = false;
+        StateHasChanged();
+        TextArea.FocusAsync();
     }
 }
 

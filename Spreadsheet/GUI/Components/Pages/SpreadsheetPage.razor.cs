@@ -97,20 +97,6 @@ public partial class SpreadsheetPage
     private bool ShowError = false;
 
     /// <summary>
-    ///     When the page is first loaded, this method ensures that the Contents input box, referred to by
-    ///     TextArea, is focused, so the user can start typing things without having to click on anything.
-    /// </summary>
-    /// <param name="firstRender"></param>
-    /// <returns></returns>
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await TextArea.FocusAsync();
-        }
-    }
-
-    /// <summary>
     /// Handler for when a cell is clicked
     /// </summary>
     /// <param name="row">The row component of the cell's coordinates</param>
@@ -125,6 +111,8 @@ public partial class SpreadsheetPage
         CurrentValue = DisplayValue(spreadsheet.GetCellValue(SelectedCell));
 
         SelectedColor = CellColors[row, col];
+
+        Debug.WriteLine(CurrentContents + ", " + CurrentValue);
 
         TextArea.FocusAsync();
         StateHasChanged();
@@ -147,10 +135,14 @@ public partial class SpreadsheetPage
             CellsBackingStore[SelectedRow, SelectedCol] = displayValue;
             CurrentContents = GetCurrentContents();
             CurrentValue = displayValue;
+
+            Debug.WriteLine(CurrentContents + ", " + CurrentValue);
         }
         catch (Exception)
         {
             ShowError = true;   // an invalid formula is inputted, so show the error box
+
+            Debug.WriteLine(CurrentContents + ", " + CurrentValue);
         }
         finally
         {
@@ -236,27 +228,6 @@ public partial class SpreadsheetPage
 
         // focus on the Contents input box
         InvokeAsync(async () => await TextArea.FocusAsync());
-    }
-
-    /// <summary>
-    ///     Hides error box that appears for an invalid formula.
-    /// </summary>
-    private void HideError()
-    {
-        ShowError = false;
-        StateHasChanged();
-        TextArea.FocusAsync();
-    }
-
-    /// <summary>
-    ///     Determines if the cell is selected.
-    /// </summary>
-    /// <param name="row">The row component of a cell's coordinates</param>
-    /// <param name="col">The column component of a cell's coordinates</param>
-    /// <returns> true if the cell described by its coordinates is the selected cell, false if otherwise.</returns>
-    private bool IsSelectedCell(int row, int col)
-    {
-        return row == SelectedRow && col == SelectedCol;
     }
 
     /// <summary>

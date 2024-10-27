@@ -19,6 +19,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Encodings.Web;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Diagnostics;
 
 /// <summary>
 ///   <para>
@@ -635,33 +636,56 @@ public class Spreadsheet
     /// </returns>
     private IList<string> SetCellContents(string name, Formula formula)
     {
-        // remove old dependencies if needed
-        if (Cells.TryGetValue(name, out Cell? cell) && cell.Contents is Formula)
-        {
-            RemoveDependencies(name, (Formula)cell.Contents);
-        }
+        Formula? oldFormula = null; // store the previous contents in case the dependencies need to be reset
 
-        // update dependency graph with new dependencies if they exist
-        HashSet<string> variables = (HashSet<string>)formula.GetVariables();
-        foreach (string variable in variables)
+        try
         {
-            cellDependencies.AddDependency(variable, name);
+            // remove old dependencies if needed
+            if (Cells.TryGetValue(name, out Cell? cell) && cell.Contents is Formula)
+            {
+                oldFormula = (Formula)cell.Contents;
+                RemoveDependencies(name, oldFormula);
+            }
+
+            // update dependency graph with new dependencies if they exist
+            HashSet<string> variables = (HashSet<string>)formula.GetVariables();
+            foreach (string variable in variables)
+            {
+                cellDependencies.AddDependency(variable, name);
+            }
+
+            // store result to check if a CircularException occurs
+            IList<string> result = GetCellsToRecalculate(name).ToList();
+
+            if (cell is not null)
+            {
+                cell.Contents = formula;
+                cell.StringForm = "=" + formula.ToString();
+            }
+            else
+            {
+                Cells.Add(name, new Cell(formula));
+            }
+
+            return result;
         }
-
-        // store result to check if a CircularException occurs
-        IList<string> result = GetCellsToRecalculate(name).ToList();
-
-        if (cell is not null)
+        catch (Exception)   // if a CircularException occurs, reset dependencies to what it was originally
         {
-            cell.Contents = formula;
-            cell.StringForm = "=" + formula.ToString();
-        }
-        else
-        {
-            Cells.Add(name, new Cell(formula));
-        }
+            // add old dependencies back to cellDependencies
+            if(oldFormula is not null)
+            {
+                HashSet<string> variables = (HashSet<string>)oldFormula.GetVariables();
+                foreach (string variable in variables)
+                {
+                    cellDependencies.AddDependency(variable, name);
+                }
+            }
 
-        return result;
+            // remove dependencies that were added from the new formula
+            RemoveDependencies(name, formula);
+
+            throw new CircularException();
+        }
     }
 
     /// <summary>
