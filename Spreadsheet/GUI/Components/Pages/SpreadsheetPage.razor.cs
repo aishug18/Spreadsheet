@@ -2,7 +2,7 @@
 // Copyright (c) 2024 UofU-CS3500. All rights reserved.
 // </copyright>
 // <author> Aishwarya Golakoti </author>
-// <date> _ October 2024 </date>
+// <date> 27 October 2024 </date>
 // For CS 3500
 //
 // used ChatGPT for help mostly with syntax and GUI-related logic. These include:
@@ -96,6 +96,7 @@ public partial class SpreadsheetPage
     ///     True if an invalid formula was entered (which causes an exception), false if otherwise.
     /// </summary>
     private bool ShowError = false;
+
 
     /// <summary>
     /// Handler for when a cell is clicked
